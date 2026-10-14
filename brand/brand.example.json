@@ -1,0 +1,22 @@
+{
+  "name": "Example Brand",
+  "creator": "Jordan Example",
+  "handle": "@example",
+  "niche": "Practical AI for small-business owners",
+  "audience": "Owners of 1-20 person service businesses who are curious about AI but short on time",
+  "promise": "Use AI to win back 10 hours a week without losing the human touch",
+  "voice": "Direct, warm, practical. Plain words. No hype.",
+  "offer": {"name": "Free AI workflow checklist", "url": "https://example.com/checklist", "cta": "Grab the free checklist"},
+  "platforms": ["instagram", "youtube_shorts", "youtube", "linkedin"],
+  "colors": {"background": "#0E1116", "surface": "#171B22", "text": "#F4F1EA", "muted": "#9AA3AF", "accent": "#E8B44A"},
+  "fonts": {
+    "display": {"family": "DM Serif Display", "file": "fonts/DMSerifDisplay-Regular.ttf", "google": "ofl/dmserifdisplay/DMSerifDisplay-Regular.ttf"},
+    "display_italic": {"family": "DM Serif Display", "file": "fonts/DMSerifDisplay-Italic.ttf", "google": "ofl/dmserifdisplay/DMSerifDisplay-Italic.ttf"},
+    "body": {"family": "Inter", "file": "fonts/Inter[opsz,wght].ttf", "google": "ofl/inter/Inter[opsz,wght].ttf"},
+    "captions": {"family": "Anton", "file": "fonts/Anton-Regular.ttf", "google": "ofl/anton/Anton-Regular.ttf"}
+  },
+  "captions": {"text": "#FFFFFF", "accent": "#E8B44A", "uppercase": true},
+  "transcription": {"model": "small.en", "language": "en"},
+  "never_say": ["guaranteed results", "get rich quick"],
+  "words_on_screen": "Only the speaker's own words. No invented numbers, quotes or claims."
+}

@@ -1,0 +1,18 @@
+# your videos, transcripts and renders stay on your computer
+projects/*
+!projects/README.md
+inbox/*
+!inbox/README.md
+# installed on each computer by setup
+.venv/
+graphics/node_modules/
+fonts/*.ttf
+fonts/*.otf
+# your personal brand profile (created by the brand interview)
+brand/brand.json
+chatgpt-project/06-BRAND-PROFILE.md
+*.mp4
+*.mov
+*.wav
+.DS_Store
+__pycache__/

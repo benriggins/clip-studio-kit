@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=__W__, height=__H__" />
+    <!-- Local copies only: a render must never depend on the network. -->
+    <script src="assets/js/gsap.min.js"></script>
+    <script src="assets/js/CustomEase.min.js"></script>
+    <!-- Brand tokens generated from brand/brand.json. Change the brand there, never here. -->
+    <link rel="stylesheet" href="brand.css" />
+    <style>
+      /* Layout for THIS explainer only. Colours, fonts and components come from brand.css. */
+      html, body { width: __W__px; height: __H__px; }
+      #root { width: __W__px; height: __H__px; }
+      #content { position: absolute; left: var(--pad-x); right: var(--pad-x); top: var(--safe-top); bottom: var(--safe-bottom);
+                 display: flex; flex-direction: column; justify-content: center; }
+      .steps { margin-top: 42px; display: flex; flex-direction: column; gap: 22px; }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      class="b-root"
+      data-composition-id="__COMP_ID__"
+      data-start="0"
+      data-duration="__DUR__"
+      data-width="__W__"
+      data-height="__H__"
+      data-composition-variables='{"t1":0.9,"t2":1.9,"t3":2.9,"tOut":__TOUT__}'
+    >
+      <div class="b-grid fill"></div>
+      <div id="content">
+        <!-- EVERY label on screen must be the speaker's own words from the transcript. Never invent claims or numbers. -->
+        <div id="eyebrow" class="b-eyebrow">EYEBROW · FROM THE TRANSCRIPT</div>
+        <h1 id="headline" class="b-headline">One idea, in <em>their</em> words</h1>
+        <div id="rule" class="b-rule"></div>
+        <div class="steps">
+          <div class="b-step" id="s1"><span class="n">1</span><span class="t">First point</span></div>
+          <div class="b-step" id="s2"><span class="n">2</span><span class="t">Second point</span></div>
+          <div class="b-step" id="s3"><span class="n">3</span><span class="t is-accent">The payoff</span></div>
+        </div>
+      </div>
+      <div class="b-vignette fill"></div>
+    </div>
+
+    <script>
+      gsap.registerPlugin(CustomEase);
+      CustomEase.create("brand", "M0,0 C0.22,0.68 0.24,1 1,1");
+
+      // Beat times in seconds from the graphic's start. Set each one on the moment the speaker SAYS that word in
+      // the cut (Claude Code reads word times from the cut, never from the raw transcript clock).
+      const V = Object.assign(
+        { t1: 0.9, t2: 1.9, t3: 2.9, tOut: __TOUT__ },
+        (window.__hyperframes && window.__hyperframes.getVariables && window.__hyperframes.getVariables()) || {}
+      );
+
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true, defaults: { ease: "brand" } });
+      tl.fromTo("#eyebrow", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5 }, 0.1);
+      tl.fromTo("#headline", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.7 }, 0.2);
+      tl.fromTo("#rule", { scaleX: 0 }, { scaleX: 1, duration: 0.6, transformOrigin: "0% 50%" }, 0.45);
+      ["#s1", "#s2", "#s3"].forEach((id, i) =>
+        tl.fromTo(id, { opacity: 0, x: -18 }, { opacity: 1, x: 0, duration: 0.55 }, V["t" + (i + 1)])
+      );
+      tl.fromTo("#content", { opacity: 1 }, { opacity: 0, y: -10, duration: 0.35, ease: "power2.in", immediateRender: false }, V.tOut);
+      window.__timelines["__COMP_ID__"] = tl;
+    </script>
+  </body>
+</html>

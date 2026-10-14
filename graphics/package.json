@@ -1,0 +1,6 @@
+{
+  "name": "clip-studio-graphics",
+  "private": true,
+  "description": "Local GSAP for explainer graphics (copied into each composition; renders never touch the network).",
+  "dependencies": { "gsap": "3.13.0" }
+}

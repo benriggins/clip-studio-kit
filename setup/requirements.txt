@@ -1,0 +1,6 @@
+faster-whisper==1.1.1
+requests>=2.31
+numpy<3
+pillow>=10
+opencv-python-headless>=4.9,<5
+fonttools>=4.50
