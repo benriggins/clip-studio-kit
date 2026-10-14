@@ -21,9 +21,21 @@ Run every command from the kit folder (the folder this file is in).
 
 Check the state, and do only the steps not yet done:
 1. Is the setup done? Run the doctor (§1) if `.venv` exists. If it says READY, skip to step 2.
-2. Does `brand/brand.json` exist? If not, run the **brand interview** (§2).
+2. Does `my-studio/brand.json` exist? If not, run the **brand interview and Style Lab** (§2).
 3. Has the ChatGPT Project been set up? Check `chatgpt-project/.done`. If not, **guide the Project setup** (§3).
 4. Then explain the daily workflow in five short lines (§4) and ask for their first video.
+
+**Every session after that:** read `my-studio/MY-STYLE.md` before editing anything. It is the user's own
+editing SOP, and it wins over the defaults in this file. When they state a new preference ("bigger captions from
+now on"), update `my-studio/brand.json` and `MY-STYLE.md` (and `chatgpt-project/06-BRAND-PROFILE.md` if it affects
+ChatGPT), then commit in `my-studio`.
+
+### Two folders, two repos
+- **The kit** (this folder) is a clone of the public repo. Update it any time with `git pull`. Never commit the
+  user's things to it; `my-studio/`, `projects/`, `inbox/` and `06-BRAND-PROFILE.md` are gitignored.
+- **`my-studio/`** is the user's own private repo: `brand.json`, `MY-STYLE.md`, `stylelab/` and any custom
+  templates. Create it on first run: `mkdir -p my-studio && git -C my-studio init -q`. Commit after every style
+  change. If they want a backup, offer to push it to a **private** GitHub repo they create (never public).
 
 Give the user a one-paragraph welcome first: what Clip Studio does, roughly how long setup takes (5–15 minutes,
 mostly downloads), and that everything is free and stays on their computer, apart from ChatGPT.
@@ -64,24 +76,36 @@ Disk space: about 2–3 GB, including the transcription model. A recent Mac or P
 
 ---
 
-## 2. Brand interview
+## 2. Brand interview and Style Lab
 
-**Goal:** `brand/brand.json`, a filled-in `chatgpt-project/06-BRAND-PROFILE.md`, and the fonts.
+**Goal:** `my-studio/brand.json`, `my-studio/MY-STYLE.md`, a filled-in `chatgpt-project/06-BRAND-PROFILE.md`, and
+the fonts. The user chooses their look **by watching examples in their own brand**, not by reading descriptions.
 
-Ask the questions in `brand/BRAND-INTERVIEW.md`, a few at a time. Offer sensible defaults so they can answer
-quickly. If they have a website or social profile, offer to read it and propose answers they only need to confirm.
+Follow `brand/BRAND-INTERVIEW.md`, a few questions at a time. Offer sensible defaults so they can answer quickly.
+If they have a website or social profile, offer to read it and propose answers they only need to confirm.
 
-Then:
-1. Write `brand/brand.json`, using `brand/brand.example.json` as the template.
+1. **Who they are** (Part 1) and **the look** (Part 2). Then write `my-studio/brand.json` from
+   `brand/brand.example.json`:
    - **Colours:** five hex values. Check that text and accent are readable on the background (contrast ≥ 4.5:1).
    - **Fonts:** Google Fonts paths. Caption fonts must be a **static** file, such as `ofl/anton/Anton-Regular.ttf`
      or `ofl/bebasneue/BebasNeue-Regular.ttf`. Display and body fonts can be variable.
-2. Run `tools/fetch_fonts.py`.
-3. Write `chatgpt-project/06-BRAND-PROFILE.md` from `brand/BRAND-PROFILE.template.md` with their real answers.
-4. Show them a **style frame** before they rely on it: scaffold a sample explainer
-   (`tools/explainer.py new _style sample --canvas 1080x1920`), render it, export one frame with
-   `tools/frames.py`, and show it to them. Adjust colours and fonts until they like it. Then delete
-   `projects/_style`.
+   - Run `tools/fetch_fonts.py`.
+2. **Style Lab, part one** (Part 3): run `tools/stylelab.py looks` in the background (about 1–2 minutes). It
+   renders every slide template, animation feel and caption style in their brand and opens a gallery page. They
+   pick:
+   - slide templates (any number; these become their defaults);
+   - one animation feel;
+   - one caption style, and upper or normal case.
+
+   Save the picks to `brand.json` (`style.templates`, `style.feel`, `captions.style`, `captions.uppercase`). If
+   they want a tweak (a colour, bigger text), change it and re-run `looks`.
+3. Write `my-studio/MY-STYLE.md` from `brand/MY-STYLE.template.md` and `chatgpt-project/06-BRAND-PROFILE.md` from
+   `brand/BRAND-PROFILE.template.md`. Use plain words and fill every `{{…}}`. For anything not chosen yet
+   (pace, framing, splice style), write "default; choose on first video".
+4. Commit: `git -C my-studio add -A && git -C my-studio commit -qm "Brand and style"`.
+
+**Style Lab, part two** happens on their first real video (§4.3): pace, framing and splice style, chosen by
+watching their own footage edited three ways.
 
 ---
 
@@ -145,6 +169,14 @@ were good). Then:
 ChatGPT's plan is **editorial advice**. You may move a cut, drop a segment that doesn't land, or reorder. You may
 **not** invent words, or change what the speaker meant.
 
+**First real video only: Style Lab, part two.** If `brand.json` has `style.chosen_on_footage: false`, pick their first short clip
+and run `tools/stylelab.py clip projects/<name>/chatgpt/clip-plan.json <clip-id>` in the background (a few
+minutes). It renders the clip three ways from their own footage (natural/tight pace, framing styles, caption
+styles) and opens a comparison page. Ask Part 4 of `brand/BRAND-INTERVIEW.md`: pace, framing, splice style and
+graphics density. Mixing is fine ("B's pace with A's captions"). Save the answers to `brand.json` (and set `chosen_on_footage` to true), update
+`MY-STYLE.md` and `06-BRAND-PROFILE.md`, commit, and tell them to replace `06-BRAND-PROFILE.md` in their ChatGPT
+Project. Then build every clip with their choices. The `-styleA/B/C` folders are throwaway; delete them.
+
 ### 4.4 Build each clip (do all of it; the user should only ever see finished work)
 For `projects/<name>/<clip>/edit-plan.json`:
 1. **Framing.**
@@ -191,18 +223,30 @@ related", don't make it.
 
 - **Where:** where the speaker is only talking and the idea is abstract. Also over cuts: a graphic covering a
   join hides it.
-  - Short-form: about 2–3 per 45 s.
-  - LinkedIn and long-form: as many as genuinely teach.
+  - How many follows their `style.graphics_density`: light ≈ 1 per clip, medium ≈ 2–3 per 45 s, heavy = most of
+    the runtime. LinkedIn and long-form: as many as genuinely teach.
 - **Labels:** the speaker's own words only, as short phrases. Search the transcript for every number, name and
   quote before typing it.
 - **Build:**
-  1. `tools/explainer.py new <project> <name> --canvas 1080x1920` (or `1920x1080` for 16:9).
-  2. Edit `index.html`: replace the template's eyebrow, headline and steps, or design your own layout using the
-     brand classes in `brand.css`.
-  3. Set the beat times (`t1`, `t2`, …) to when the speaker says each label **in the cut**. Get these from
+  1. Choose the template that fits the idea, preferring their favourites (`style.templates`):
+     - `steps`: an ordered list or process;
+     - `compare`: two sides or before/after;
+     - `stat`: one number that matters;
+     - `quote`: one line worth remembering;
+     - `timeline`: things in time order;
+     - `tiers`: levels or a ladder.
+
+     `tools/explainer.py list` describes each one.
+  2. `tools/explainer.py new <project> <name> --template <t> --canvas 1080x1920` (or `1920x1080` for 16:9). Add
+     `--split` when a face card will sit beside it (16:9 split-screen, or the card on top in 9:16). The feel
+     defaults to theirs; override it with `--feel smooth|punchy|minimal`.
+  3. Edit `index.html`: replace every placeholder label with the speaker's words. Add or remove items, or design
+     your own layout using the brand classes in `brand.css`. If you save a custom layout they love, copy it into
+     `my-studio/templates/` and note it in `MY-STYLE.md`.
+  4. Set the beat times (`t1`, `t2`, …) to when the speaker says each label **in the cut**. Get these from
      `captions.ass.lines.json`, minus the graphic's `at` time.
-  4. `tools/explainer.py check` must pass. Fix every layout and contrast error.
-  5. `tools/explainer.py render`, then look at frames from the render before using it.
+  5. `tools/explainer.py check` must pass. Fix every layout and contrast error.
+  6. `tools/explainer.py render`, then look at frames from the render before using it.
 - **Place it:** add it to the plan's `graphics`:
   `{"file": "graphics/<name>/renders/<name>.mp4", "at": <seconds in the cut>}`
   - The footage and voice keep playing underneath. Graphics never pause or skip footage.
@@ -264,9 +308,11 @@ Platform specs:
 | `render.py <plan> [--draft] [--no-captions]` | cuts, crops, graphics, face cards, captions, whooshes, loudness master |
 | `verify.py <plan>` | re-transcribes every join: clipped, leaked or doubled words |
 | `captions.py <plan>` | word-timed captions in the brand font, with accent colour |
-| `explainer.py new/check/render/brand` | animated explainers on the brand (HyperFrames) |
+| `explainer.py list/new/check/render/brand` | animated explainers on the brand (HyperFrames): templates, feels, `--split` |
 | `qc.py <video> [plan]` | loudness, true peak, black frames, contact sheet, join frames |
 | `fetch_fonts.py` | downloads the brand's Google Fonts |
+| `stylelab.py looks` | gallery of slide templates, feels and caption styles in their brand → `my-studio/stylelab/gallery.html` |
+| `stylelab.py clip <clip-plan> <id>` | one of their clips edited three ways (pace, framing, captions) → `compare.html` |
 
 Edit-plan fields Claude Code may change by hand:
 - `segments[].in` / `out` (seconds in that take);

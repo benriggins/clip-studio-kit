@@ -9,28 +9,28 @@ Field names and value formats must be exactly as below.
   "mode": "clips",
   "clips": [
     {
-      "id": "reel-good-things",
+      "id": "reel-busy-not-behind",
       "platform": "instagram",
       "format": "9:16",
-      "title": "The devil's best tool is good things",
-      "why": "Contrarian hook + clean payoff + very sendable",
+      "title": "You're not behind, you're busy",
+      "why": "Relatable hook + one clear reframe + very sendable",
       "hooks": [
-        "The devil's best tool to use on you is this.",
-        "Good things.",
-        "You have to have a North Star."
+        "Most owners I talk to think they're behind.",
+        "You're not behind. You're busy.",
+        "The fix wasn't another tool."
       ],
       "segments": [
         {"take": "V1", "start": "00:30.34", "end": "00:33.98", "role": "HOOK",
-         "text": "The devil's best tool to use on you is this."},
+         "text": "Most owners I talk to think they're behind."},
         {"take": "V1", "start": "00:36.44", "end": "00:38.10", "role": "TENSION",
-         "text": "Good things."},
+         "text": "They're not behind."},
         {"take": "V2", "start": "00:09.14", "end": "00:16.36", "role": "PAYOFF",
-         "text": "We call ourselves all these different things and we look in the mirror and we see ourselves in a way that God does not see us"}
+         "text": "They're doing ten jobs by hand that a simple checklist and one assistant could take off their plate this week"}
       ],
-      "accents": ["good things", "North Star"],
+      "accents": ["not behind", "this week"],
       "explainers": [
-        {"after_text": "Good things.", "type": "compare", "idea": "Good things versus the right thing",
-         "labels": ["Good things", "The right thing", "Points to the North Star"]}
+        {"after_text": "They're not behind.", "type": "compare", "idea": "Behind versus overloaded",
+         "labels": ["Behind", "Doing ten jobs by hand", "One checklist"]}
       ],
       "posting": {
         "instagram_caption": "…",

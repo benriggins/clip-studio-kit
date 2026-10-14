@@ -59,7 +59,7 @@ def brand_css(W, H, split=False):
 :root {{
   --bg: {c['background']}; --surface: {c['surface']}; --text: {c['text']}; --muted: {c['muted']}; --accent: {c['accent']};
   --font-display: "{f['display']['family']}", Georgia, serif; --font-body: "{f['body']['family']}", system-ui, sans-serif;
-  --h1: {(84 if split else 96) if vertical else (78 if split else 96)}px; --step: {44 if vertical else (36 if split else 40)}px;
+  --h1: {(104 if split else 118) if vertical else (78 if split else 96)}px; --step: {54 if vertical else (36 if split else 40)}px;
 }}
 * {{ box-sizing: border-box; margin: 0; }}
 .b-root {{ position: relative; overflow: hidden; color: var(--text); font-family: var(--font-body);
@@ -70,7 +70,7 @@ def brand_css(W, H, split=False):
   linear-gradient(90deg, color-mix(in srgb, var(--text) 5%, transparent) 1px, transparent 1px); background-size: 60px 60px;
   mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%); }}
 .b-vignette {{ background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.45)); }}
-.b-eyebrow {{ font: 700 {24 if vertical else 22}px/1 var(--font-body); letter-spacing: .28em; text-transform: uppercase; color: var(--accent); }}
+.b-eyebrow {{ font: 700 {30 if vertical else 22}px/1 var(--font-body); letter-spacing: .28em; text-transform: uppercase; color: var(--accent); }}
 .b-headline {{ margin-top: 22px; font: 400 var(--h1)/1.02 var(--font-display); letter-spacing: -.02em; color: var(--text); }}
 .b-headline em {{ font-style: italic; color: var(--accent); }}
 .b-rule {{ margin-top: 30px; width: 120px; height: 3px; background: var(--accent); }}
