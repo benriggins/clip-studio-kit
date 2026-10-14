@@ -18,11 +18,13 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from _common import CANVAS, die, fmt, norm, pcm, probe, to_sec  # noqa: E402
+from _common import CANVAS, brand, die, fmt, norm, pcm, probe, to_sec  # noqa: E402
 from face import face_box  # noqa: E402
 
 WINDOW = 8.0          # seconds either side of ChatGPT's timecode to search for the words
 MIN_GAP = 0.10        # a gap smaller than this between words is a "tight" join: cut lands on a breath at best
+PACE = {'natural': None, 'tight': 0.45}   # tight: also cut any pause longer than this INSIDE a segment (jump cuts)
+PUNCH_ROLES = {'HOOK', 'REVEAL', 'PAYOFF', 'CTA'}
 TIGHT = 0.90          # tight crop = 90% of the wide crop (looser would not read as a change; tighter clips hats on a lean-in)
 
 
@@ -99,6 +101,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('clip_plan')
     ap.add_argument('--only')
+    ap.add_argument('--suffix', help='write to <clip-id>-<suffix>/ (Style Lab variants)')
     a = ap.parse_args()
     plan_path = Path(a.clip_plan).resolve()
     project = plan_path.parent.parent if plan_path.parent.name == 'chatgpt' else plan_path.parent
@@ -113,6 +116,9 @@ def main():
             words[tid] = json.loads(wf.read_text())
             infos[tid] = probe(t['file'])
     cp = json.loads(plan_path.read_text())
+    style = brand().get('style', {})
+    pause = PACE.get(style.get('pace', 'natural'))
+    crop_style = style.get('crop', 'alternate')
     clips = cp['clips'] if 'clips' in cp else [cp]
     for clip in clips:
         cid = clip['id']
@@ -142,25 +148,39 @@ def main():
             if r < 0.92:
                 warnings.append(f'{sid}: words differ slightly from ChatGPT\'s text ({r:.0%} match); '
                                 f'the real transcript words are used')
-            t_in, t_out = cut_points(media, ws, i, j, warnings, sid)
-            face = face_box(media, t_in, t_out)
-            if not face['found']:
-                warnings.append(f'{sid}: no face found; crop is centred. Check frames with frames.py')
-            elif face.get('fallback'):
-                warnings.append(f'{sid}: face not visible in this span; used its usual position in {tid}. Check frames')
-            crop = crop_for(info, fmt_, face, tight=bool(k % 2)) if info['width'] else None
-            cw, ch = CANVAS[fmt_]
-            # where the face sits in the FINISHED frame (canvas pixels): face cards centre on this automatically
-            fpos = ({'cx': round((face['cx'] - crop['x']) * cw / crop['w']), 'cy': round((face['cy'] - crop['y']) * ch / crop['h']),
-                     'h': round(face['h'] * ch / crop['h'])} if crop and face['found'] else None)
-            segs.append({'id': f'S{k + 1}', 'take': tid, 'source': media, 'role': s.get('role', ''),
-                         'in': t_in, 'out': t_out, 'text': ' '.join(w['w'] for w in ws[i:j + 1]),
-                         'crop': crop, 'face': fpos})
+            # pace: split the span at long pauses so they are cut out (tight), or keep every breath (natural)
+            spans, a0 = [], i
+            for q in range(i, j):
+                if pause and ws[q + 1]['s'] - ws[q]['e'] > pause:
+                    spans.append((a0, q))
+                    a0 = q + 1
+            spans.append((a0, j))
+            for (si_, sj_) in spans:
+                t_in, t_out = cut_points(media, ws, si_, sj_, warnings, sid)
+                face = face_box(media, t_in, t_out)
+                if not face['found']:
+                    warnings.append(f'{sid}: no face found; crop is centred. Check frames with frames.py')
+                elif face.get('fallback'):
+                    warnings.append(f'{sid}: face not visible in this span; used its usual position in {tid}. Check frames')
+                n_seg = len(segs)
+                role = s.get('role', '').upper()
+                tight = {'alternate': bool(n_seg % 2), 'locked': False, 'punch': role in PUNCH_ROLES}.get(crop_style, bool(n_seg % 2))
+                crop = crop_for(info, fmt_, face, tight=tight) if info['width'] else None
+                cw, ch = CANVAS[fmt_]
+                # where the face sits in the FINISHED frame (canvas pixels): face cards centre on this automatically
+                fpos = ({'cx': round((face['cx'] - crop['x']) * cw / crop['w']),
+                         'cy': round((face['cy'] - crop['y']) * ch / crop['h']),
+                         'h': round(face['h'] * ch / crop['h'])} if crop and face['found'] else None)
+                segs.append({'id': f'S{n_seg + 1}', 'take': tid, 'source': media, 'role': role,
+                             'in': t_in, 'out': t_out, 'text': ' '.join(w['w'] for w in ws[si_:sj_ + 1]),
+                             'crop': crop, 'face': fpos})
         if errors:
             print(f'\n✗ {cid}: {len(errors)} segment(s) rejected, nothing written for this clip:')
             for e in errors:
                 print('  ' + e)
             continue
+        if a.suffix:
+            cid = f'{cid}-{a.suffix}'
         out_dir = project / cid
         out_dir.mkdir(parents=True, exist_ok=True)
         cw, ch = CANVAS[fmt_]

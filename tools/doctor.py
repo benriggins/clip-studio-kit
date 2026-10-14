@@ -45,7 +45,7 @@ def main():
         b = json.loads(BRAND_FILE.read_text())
         missing = [f['file'] for f in b.get('fonts', {}).values()
                    if isinstance(f, dict) and f.get('file') and not (ROOT / f['file']).exists()]
-        check('brand profile (brand/brand.json)', not missing, f'missing font files: {missing}: run fetch_fonts.py')
+        check('brand profile (my-studio/brand.json)', not missing, f'missing font files: {missing}: run fetch_fonts.py')
     else:
         print('· brand profile not created yet (Claude Code does this in the brand interview)')
     if npx:

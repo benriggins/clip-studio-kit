@@ -9,7 +9,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent          # the kit folder
-BRAND_FILE = ROOT / 'brand' / 'brand.json'
+STUDIO = ROOT / 'my-studio'                     # the user's own brand, style and SOPs (their own git repo)
+BRAND_FILE = STUDIO / 'brand.json'
 FONTS = ROOT / 'fonts'
 CANVAS = {'9:16': (1080, 1920), '16:9': (1920, 1080), '1:1': (1080, 1080), '4:5': (1080, 1350)}
 
@@ -69,10 +70,20 @@ def _rotation(v):
     return int(v.get('tags', {}).get('rotate', 0) or 0)
 
 
+def _merge(a, b):
+    for k, v in b.items():
+        a[k] = _merge(a.get(k, {}), v) if isinstance(v, dict) and isinstance(a.get(k), dict) else v
+    return a
+
+
 def brand():
     if not BRAND_FILE.exists():
-        die('No brand profile yet. Ask Claude Code to run the brand interview first (brand/brand.json).')
-    return json.loads(BRAND_FILE.read_text())
+        die('No brand profile yet. Ask Claude Code to run the brand interview first (my-studio/brand.json).')
+    b = json.loads(BRAND_FILE.read_text())
+    # Style Lab renders variants by overriding a few choices for one run, e.g. {"style": {"pace": "tight"}}
+    if os.environ.get('CLIP_BRAND_OVERRIDE'):
+        b = _merge(b, json.loads(os.environ['CLIP_BRAND_OVERRIDE']))
+    return b
 
 
 def to_sec(t):

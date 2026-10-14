@@ -3,8 +3,10 @@
 
 usage: captions.py <edit-plan.json> [out.ass]       (default: next to the plan, captions.ass)
 
+Styles (my-studio/brand.json → captions.style): "rise" (each line rises into place), "karaoke" (the whole line, with
+the spoken word lit in the accent colour), "pop" (1-3 big words at a time, popping in).
 Timing comes from the source transcript's word timestamps mapped onto the cut's clock (each segment's words,
-offset by where that segment sits in the cut). Style comes from brand/brand.json: caption font, text colour,
+offset by where that segment sits in the cut). Style comes from my-studio/brand.json: caption font, text colour,
 accent colour on the plan's "accents" phrases, soft shadow (never a hard outline). verify.py re-transcribes the
 render afterwards and flags drift.
 """
@@ -110,29 +112,65 @@ def main(plan_path, out_ass=None):
     if not words:
         die('no words found inside the plan segments')
     mark_accents(words, plan.get('accents', []))
-    lines = lines_of(words)
-    rise = size + 24
-    clip = f'\\clip(0,{base - size - 40},{W},{base + 14})'
+    style = cap.get('style', 'rise')
+    show = lambda w: w['w'].upper() if upper else w['w']  # noqa: E731
+    shadow = '\\blur8\\1c&H000000&\\1a&H70&'
     ev = []
-    for li, ln in enumerate(lines):
-        start = ln[0]['s'] - 0.04
-        end = ln[-1]['e'] + 0.35
-        if li + 1 < len(lines):
-            end = min(end, lines[li + 1][0]['s'] - 0.04)
-        end = max(end, start + 0.35)
-        show = lambda w: w['w'].upper() if upper else w['w']  # noqa: E731
-        body = ' '.join(f'{{\\c{gold}}}{show(w)}{{\\c{white}}}' if w['gold'] else show(w) for w in ln)
-        plain = ' '.join(show(w) for w in ln)
-        steps = [(start + k / FPS, start + (k + 1) / FPS, base + rise * (1 - k / REVEAL_FRAMES) ** 4)
-                 for k in range(REVEAL_FRAMES)]
-        steps = [s for s in steps if s[0] < end] + [(start + REVEAL_FRAMES / FPS, end, base)]
-        for a, bb, y in steps:
-            a = min(a, end)
-            if bb <= a:
+
+    def emit(a, b, x, y, plain, body, extra='', clip_=''):
+        ev.append(f'Dialogue: 0,{ts(a)},{ts(b)},Cap,,0,0,0,,{{\\pos({x},{y + 6:.0f}){clip_}{shadow}{extra}}}{plain}')
+        ev.append(f'Dialogue: 1,{ts(a)},{ts(b)},Cap,,0,0,0,,{{\\pos({x},{y:.0f}){clip_}{extra}}}{body}')
+
+    def colour(w, on=False):
+        return f'{{\\c{gold}}}{show(w)}{{\\c{white}}}' if (w['gold'] or on) else show(w)
+
+    if style == 'pop':
+        # 1-3 words at a time, bigger, popping in from 70% scale over 120 ms
+        units, cur = [], []
+        for w in words:
+            cur.append(w)
+            if len(cur) == 3 or w['w'][-1] in '.,?!' or (len(cur) == 2 and len(' '.join(x['w'] for x in cur)) > 12):
+                units.append(cur)
+                cur = []
+        if cur:
+            units.append(cur)
+        big = int(size * 1.2)
+        for ui, u in enumerate(units):
+            a = u[0]['s'] - 0.03
+            b = units[ui + 1][0]['s'] - 0.03 if ui + 1 < len(units) else u[-1]['e'] + 0.4
+            b = max(b, a + 0.25)
+            pop = f'\\fs{big}\\fscx70\\fscy70\\t(0,120,\\fscx100\\fscy100)'
+            emit(a, b, W // 2, base, ' '.join(show(w) for w in u), ' '.join(colour(w) for w in u), pop)
+        lines = units
+    else:
+        lines = lines_of(words)
+        rise = size + 24
+        clip = f'\\clip(0,{base - size - 40},{W},{base + 14})'
+        for li, ln in enumerate(lines):
+            start = ln[0]['s'] - 0.04
+            end = ln[-1]['e'] + 0.35
+            if li + 1 < len(lines):
+                end = min(end, lines[li + 1][0]['s'] - 0.04)
+            end = max(end, start + 0.35)
+            plain = ' '.join(show(w) for w in ln)
+            if style == 'karaoke':
+                # the whole line fades in; the word being spoken lights up in the accent colour
+                for wi, w in enumerate(ln):
+                    a = start if wi == 0 else w['s']
+                    b = ln[wi + 1]['s'] if wi + 1 < len(ln) else end
+                    if b <= a:
+                        continue
+                    body = ' '.join(colour(x, on=(k == wi)) for k, x in enumerate(ln))
+                    emit(a, b, W // 2, base, plain, body, '\\fad(90,0)' if wi == 0 else '')
                 continue
-            ev.append(f'Dialogue: 0,{ts(a)},{ts(bb)},Cap,,0,0,0,,{{\\pos({W // 2},{y + 6:.0f}){clip}\\blur8'
-                      f'\\1c&H000000&\\1a&H70&}}{plain}')
-            ev.append(f'Dialogue: 1,{ts(a)},{ts(bb)},Cap,,0,0,0,,{{\\pos({W // 2},{y:.0f}){clip}}}{body}')
+            body = ' '.join(colour(w) for w in ln)
+            steps = [(start + k / FPS, start + (k + 1) / FPS, base + rise * (1 - k / REVEAL_FRAMES) ** 4)
+                     for k in range(REVEAL_FRAMES)]
+            steps = [x for x in steps if x[0] < end] + [(start + REVEAL_FRAMES / FPS, end, base)]
+            for a, bb, y in steps:
+                a = min(a, end)
+                if bb > a:
+                    emit(a, bb, W // 2, y, plain, body, '', clip)
     head = f"""[Script Info]
 ScriptType: v4.00+
 PlayResX: {W}
@@ -151,7 +189,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     json.dump([{'text': ' '.join(w['w'] for w in ln), 'start': round(ln[0]['s'], 2), 'end': round(ln[-1]['e'], 2)}
                for ln in lines], open(str(out_ass) + '.lines.json', 'w'), indent=1)
     widest = max(lines, key=lambda ln: len(' '.join(w['w'] for w in ln)))
-    print(f'{len(lines)} caption lines ({family}) → {out_ass}\n   widest: "{" ".join(w["w"] for w in widest)}"')
+    print(f'{len(lines)} caption units ({family}, style {style}) → {out_ass}\n   widest: "{" ".join(w["w"] for w in widest)}"')
 
 
 if __name__ == '__main__':

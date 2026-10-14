@@ -9,7 +9,7 @@ graphics/node_modules/
 fonts/*.ttf
 fonts/*.otf
 # your personal brand profile (created by the brand interview)
-brand/brand.json
+my-studio/
 chatgpt-project/06-BRAND-PROFILE.md
 *.mp4
 *.mov

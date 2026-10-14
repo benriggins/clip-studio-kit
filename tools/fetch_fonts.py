@@ -2,7 +2,7 @@
 """Download the brand's fonts (free Google Fonts, OFL) into fonts/. Run by setup; safe to re-run.
 
 usage: fetch_fonts.py [google-fonts-path ...]
-  With no arguments: the defaults plus every font listed in brand/brand.json.
+  With no arguments: the defaults plus every font listed in my-studio/brand.json.
   A google-fonts-path looks like  ofl/anton/Anton-Regular.ttf  (browse github.com/google/fonts).
 """
 import json
