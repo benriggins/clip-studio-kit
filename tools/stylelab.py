@@ -28,10 +28,24 @@ SAMPLE = ("Most people think they need more time. They don't. They need a system
           "That is the whole game.")
 
 CAPTION_STYLES = {
-    'rise': 'Each line rises into place. Clean and calm; the default.',
+    'rise': 'Each line rises into place; its words light up as they are spoken. Clean and calm.',
     'karaoke': 'The whole line shows, and the word being spoken lights up in your accent colour.',
-    'pop': '1–3 big words at a time, popping in. High energy, very readable on mute.',
+    'pop': '1–3 big words at a time, built word by word, the spoken word in a highlight box. High energy.',
 }
+
+
+def demo():
+    """Optional my-studio/stylelab-demo.json: sample wording for the gallery, so it looks like the user's videos."""
+    f = STUDIO / 'stylelab-demo.json'
+    return json.loads(f.read_text()) if f.exists() else {}
+
+
+def fill_demo(index_html, template):
+    reps = demo().get('templates', {}).get(template, {})
+    html = index_html.read_text()
+    for old, new in reps.items():
+        html = html.replace(old, new)
+    index_html.write_text(html)
 VARIANTS = {   # Style Lab "clip" variants: (label, override, description)
     'A': ({'style': {'pace': 'natural', 'crop': 'alternate'}, 'captions': {'style': 'rise'}},
           'Natural pace · wide/tight framing · rising captions'),
@@ -52,13 +66,15 @@ def caption_demo(style, out):
     proj = ROOT / 'projects' / '_stylelab'
     (proj / 'transcript' / 'V1').mkdir(parents=True, exist_ok=True)
     words, t = [], 0.4
-    for w in SAMPLE.split():
+    sample = demo().get('caption_sample', SAMPLE)
+    for w in sample.split():
         d = 0.16 + 0.035 * len(w)
         words.append({'w': w, 's': round(t, 2), 'e': round(t + d, 2)})
         t += d + (0.35 if w[-1] in '.,' else 0.05)
     (proj / 'transcript' / 'V1' / 'words.json').write_text(json.dumps(words))
-    plan = {'id': f'cap-{style}', 'canvas': {'width': 1080, 'height': 1920, 'fps': 30}, 'accents': ['system', 'whole game'],
-            'segments': [{'id': 'S1', 'take': 'V1', 'in': 0.0, 'out': round(t + 0.3, 2), 'text': SAMPLE}]}
+    plan = {'id': f'cap-{style}', 'canvas': {'width': 1080, 'height': 1920, 'fps': 30},
+            'accents': demo().get('caption_accents', ['system', 'whole game']),
+            'segments': [{'id': 'S1', 'take': 'V1', 'in': 0.0, 'out': round(t + 0.3, 2), 'text': sample}]}
     pdir = proj / f'cap-{style}'
     pdir.mkdir(exist_ok=True)
     (pdir / 'edit-plan.json').write_text(json.dumps(plan))
@@ -66,8 +82,18 @@ def caption_demo(style, out):
     b = brand()['colors']
     ass = str(pdir / 'captions.ass').replace(':', '\\:')
     fonts = str(ROOT / 'fonts').replace(':', '\\:')
-    run([ffmpeg(), '-y', '-v', 'error', '-f', 'lavfi', '-i', f'color=c={b["surface"]}:s=1080x1920:r=30:d={t + 0.6:.2f}',
-         '-vf', f"ass='{ass}':fontsdir='{fonts}',format=yuv420p", '-c:v', 'libx264', '-crf', '22', out])
+    import explainer
+    photo = explainer.pick_photo('captions', demo().get('caption_backdrop')) if brand().get('style', {}).get(
+        'backdrop', {}).get('photos') else None
+    if photo:   # captions sit on footage, so show them on a real photo with a slow push-in
+        src = ['-loop', '1', '-framerate', '30', '-t', f'{t + 0.6:.2f}', '-i', photo]
+        pre = (f"scale=1296:2304:force_original_aspect_ratio=increase,crop=1296:2304,"
+               f"zoompan=z='1.0+0.0006*on':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1080x1920:fps=30,eq=brightness=-0.04,")
+    else:
+        src = ['-f', 'lavfi', '-i', f'color=c={b["surface"]}:s=1080x1920:r=30:d={t + 0.6:.2f}']
+        pre = ''
+    run([ffmpeg(), '-y', '-v', 'error', *src,
+         '-vf', f"{pre}ass='{ass}':fontsdir='{fonts}',format=yuv420p", '-t', f'{t + 0.6:.2f}', '-c:v', 'libx264', '-crf', '20', out])
 
 
 def page(title, intro, sections):
@@ -96,16 +122,26 @@ def looks():
     shutil.rmtree(gdir, ignore_errors=True)
     feel = brand().get('style', {}).get('feel', 'smooth')
     tcards, fcards, ccards = [], [], []
+    st = brand().get('style', {})
+    names = [n for n in st.get('templates', []) if n in TEMPLATES] or [n for n in TEMPLATES if n != 'stairs']
+    has_photos = bool(st.get('backdrop', {}).get('photos'))
+    tones = ['dark', 'light'] if has_photos else [st.get('backdrop', {}).get('tone', 'light')]
+    shots = demo().get('backdrops', {})
     print('rendering slide templates …')
-    for name in TEMPLATES:
-        explainer.new(proj, f't-{name}', name, '1080x1920', 5.0, feel, quiet=True)
-        src = explainer.render(proj, f't-{name}', quiet=True)
-        shutil.copy(src, LAB / f'template-{name}.mp4')
-        tcards.append((name, f'template-{name}.mp4', TEMPLATES[name]['about']))
-        print(f'  {name}')
+    for name in names:
+        for tone in tones:
+            gname = f't-{name}-{tone}'
+            explainer.new(proj, gname, name, '1080x1920', 5.5, feel, quiet=True, tone=tone,
+                          backdrop=shots.get(f'{name}-{tone}'))
+            fill_demo(gdir / gname / 'index.html', name)
+            src = explainer.render(proj, gname, quiet=True)
+            shutil.copy(src, LAB / f'template-{name}-{tone}.mp4')
+            tcards.append((f'{name} · {tone}', f'template-{name}-{tone}.mp4', TEMPLATES[name]['about']))
+            print(f'  {name} ({tone})')
     print('rendering animation feels …')
     for f in FEELS:
-        explainer.new(proj, f'f-{f}', 'steps', '1080x1920', 4.5, f, quiet=True)
+        explainer.new(proj, f'f-{f}', 'steps', '1080x1920', 4.5, f, quiet=True, tone=tones[0])
+        fill_demo(gdir / f'f-{f}' / 'index.html', 'steps')
         src = explainer.render(proj, f'f-{f}', quiet=True)
         shutil.copy(src, LAB / f'feel-{f}.mp4')
         fcards.append((f, f'feel-{f}.mp4', FEELS[f]))

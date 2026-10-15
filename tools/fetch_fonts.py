@@ -4,6 +4,8 @@
 usage: fetch_fonts.py [google-fonts-path ...]
   With no arguments: the defaults plus every font listed in my-studio/brand.json.
   A google-fonts-path looks like  ofl/anton/Anton-Regular.ttf  (browse github.com/google/fonts).
+  A brand font with "instance": {"wght": 800} is cut from its variable font into a static file (its "file"), so a
+  variable family such as Montserrat can be used for captions, which need a static font.
 """
 import json
 import sys
@@ -32,6 +34,16 @@ def fetch(path):
     return dest
 
 
+def instance(src, dest, axes):
+    if dest.exists() and dest.stat().st_size > 10000:
+        return
+    from fontTools.ttLib import TTFont
+    from fontTools.varLib import instancer
+    font = instancer.instantiateVariableFont(TTFont(src), {k: float(v) for k, v in axes.items()}, updateFontNames=True)
+    font.save(dest)
+    print(f'  font {dest.name} (static cut of {src.name}: {axes})')
+
+
 def main(paths):
     FONTS.mkdir(exist_ok=True)
     wanted = list(paths) or list(DEFAULTS)
@@ -40,6 +52,10 @@ def main(paths):
         wanted += [f['google'] for f in b.get('fonts', {}).values() if isinstance(f, dict) and f.get('google')]
     for p in dict.fromkeys(wanted):
         fetch(p)
+    if not paths and BRAND_FILE.exists():
+        for f in json.loads(BRAND_FILE.read_text()).get('fonts', {}).values():
+            if isinstance(f, dict) and f.get('instance') and f.get('google'):
+                instance(FONTS / Path(f['google']).name, FONTS.parent / f['file'], f['instance'])
     print(f'fonts ready in {FONTS}')
 
 

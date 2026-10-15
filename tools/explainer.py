@@ -8,7 +8,8 @@ usage:
   explainer.py render <project> <name>                              -> graphics/<name>/renders/<name>.mp4
   explainer.py brand                                                rebuild every brand.css from my-studio/brand.json
 
-Templates: steps, compare, stat, quote, timeline, tiers (see list). --split leaves room for the speaker's live face
+Templates: steps, compare, stat, quote, timeline, tiers/stairs (see list). --tone dark|light and --backdrop <photo>
+choose the backdrop (defaults: brand.json style.backdrop). --split leaves room for the speaker's live face
 card (left in 16:9, top in 9:16). The feel defaults to the user's choice in my-studio/brand.json (style.feel).
 Files live in projects/<project>/graphics/<name>/. Replace every placeholder label with the speaker's own words,
 set the beat times, check, render, then add to the edit plan:
@@ -37,7 +38,7 @@ def npx():
     return exe
 
 
-def brand_css(W, H, split=False):
+def brand_css(W, H, split=False, tone='light'):
     b = brand()
     c, f = b['colors'], b['fonts']
     vertical = H > W
@@ -52,43 +53,88 @@ def brand_css(W, H, split=False):
         box = f'left: {pad}px; right: {pad}px; top: {int(H * 0.30)}px; bottom: {int(H * 0.32)}px;'
     elif split:
         box = f'left: {int(W * 0.46)}px; right: {pad - 30}px; top: 120px; bottom: 160px;'
-    else:
-        box = (f'left: {pad}px; right: {pad}px; top: {int(H * 0.22) if vertical else 120}px; '
-               f'bottom: {int(H * 0.32) if vertical else 160}px;')
+    else:   # text stays clear of the platform's top UI and above the caption band
+        box = (f'left: {pad}px; right: {pad}px; top: {int(H * 0.11) if vertical else 100}px; '
+               f'bottom: {int(H * 0.335) if vertical else 200}px;')
+    fill = c.get('fill', c['accent'])
+    grain = ("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'>"
+             "<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/>"
+             "</filter><rect width='100%' height='100%' filter='url(%23n)' opacity='.55'/></svg>")
     return '\n'.join(faces) + f'''
 :root {{
   --bg: {c['background']}; --surface: {c['surface']}; --text: {c['text']}; --muted: {c['muted']}; --accent: {c['accent']};
+  --fill: {fill}; --on-fill: {c.get('on_fill', '#2A2118')};
+  --card: #FFFFFF; --card-solid: #FFFFFF; --card-line: color-mix(in srgb, {c['text']} 10%, transparent);
+  --card-shadow: 0 18px 50px rgba(60, 40, 20, .10), 0 2px 6px rgba(60, 40, 20, .06);
+  --rail: color-mix(in srgb, {c['text']} 12%, transparent);
   --font-display: "{f['display']['family']}", Georgia, serif; --font-body: "{f['body']['family']}", system-ui, sans-serif;
-  --h1: {(104 if split else 118) if vertical else (78 if split else 96)}px; --step: {54 if vertical else (36 if split else 40)}px;
+  --h1: {(96 if split else 120) if vertical else (72 if split else 92)}px; --step: {58 if vertical else (36 if split else 42)}px;
+}}
+.tone-dark {{
+  --text: #FFFFFF; --muted: rgba(255, 255, 255, .74); --accent: {c.get('accent_on_dark', fill)};
+  --card: rgba(255, 255, 255, .10); --card-solid: #2A241E; --card-line: rgba(255, 255, 255, .20);
+  --card-shadow: 0 24px 60px rgba(0, 0, 0, .35); --rail: rgba(255, 255, 255, .22);
 }}
 * {{ box-sizing: border-box; margin: 0; }}
 .b-root {{ position: relative; overflow: hidden; color: var(--text); font-family: var(--font-body);
-  background: radial-gradient(90% 60% at 50% 40%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 62%), var(--bg); }}
+  background: radial-gradient(90% 55% at 50% 30%, color-mix(in srgb, var(--fill) 22%, transparent), transparent 65%), var(--bg); }}
+.b-root.tone-dark {{ background: radial-gradient(90% 60% at 50% 35%, #3A3027, #15110D 75%); }}
 .fill {{ position: absolute; inset: 0; pointer-events: none; }}
+.bd-photo-wrap {{ overflow: hidden; }}
+.bd-photo {{ width: 100%; height: 100%; object-fit: cover; transform-origin: 50% 60%; }}
+.tone-dark .bd-shade {{ background: linear-gradient(180deg, rgba(20, 15, 10, .46) 0%, rgba(20, 15, 10, .58) 45%, rgba(20, 15, 10, .80) 100%),
+  radial-gradient(80% 50% at 50% 40%, rgba(214, 178, 138, .10), transparent 70%); }}
+.tone-light .bd-photo-wrap {{ top: auto; height: {38 if vertical else 34}%;
+  -webkit-mask-image: linear-gradient(transparent, #000 42%); mask-image: linear-gradient(transparent, #000 42%); }}
+.tone-light .bd-shade {{ background: linear-gradient(180deg, transparent {66 if vertical else 70}%, rgba(20, 15, 10, .42) 100%); }}
+.bd-grain {{ background-image: url("{grain}"); opacity: .07; mix-blend-mode: overlay; }}
+.tone-dark .b-step, .tone-dark .b-statcard, .tone-dark .b-compare .col, .tone-dark .b-stairs .blk {{
+  -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); }}
 #content {{ position: absolute; {box} display: flex; flex-direction: column; justify-content: center; }}
-.b-grid {{ background-image: linear-gradient(color-mix(in srgb, var(--text) 5%, transparent) 1px, transparent 1px),
-  linear-gradient(90deg, color-mix(in srgb, var(--text) 5%, transparent) 1px, transparent 1px); background-size: 60px 60px;
-  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%); }}
-.b-vignette {{ background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.45)); }}
-.b-eyebrow {{ font: 700 {30 if vertical else 22}px/1 var(--font-body); letter-spacing: .28em; text-transform: uppercase; color: var(--accent); }}
-.b-headline {{ margin-top: 22px; font: 400 var(--h1)/1.02 var(--font-display); letter-spacing: -.02em; color: var(--text); }}
-.b-headline em {{ font-style: italic; color: var(--accent); }}
-.b-rule {{ margin-top: 30px; width: 120px; height: 3px; background: var(--accent); }}
+.b-pill {{ align-self: flex-start; display: inline-block; width: max-content; padding: 16px 30px 15px; border-radius: 999px;
+  background: var(--fill); color: var(--on-fill); font: 700 {30 if vertical else 22}px/1 var(--font-body); letter-spacing: .16em; text-transform: uppercase; }}
+.b-headline {{ margin-top: 30px; font: 600 var(--h1)/1.04 var(--font-display); letter-spacing: -.03em; color: var(--text); }}
+.split .w {{ display: inline-block; overflow: hidden; vertical-align: top; padding: .06em 0 .16em; margin: -.06em 0 -.16em; }}
+.split .w.has-swash {{ overflow: visible; }}
+.split .wi {{ display: inline-block; }}
+.swash {{ position: relative; display: inline-block; }}
+.swash-svg {{ position: absolute; left: -3%; width: 106%; bottom: -.3em; height: .36em; overflow: visible; }}
+.swash-svg path {{ fill: none; stroke: var(--fill); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }}
 .is-accent {{ color: var(--accent); }}
 ''' + TEMPLATE_CSS
+
+
+def pick_photo(name, choice=None):
+    """The backdrop photo for a graphic: an explicit path or photo name, 'none', or one of brand style.backdrop.photos."""
+    if choice == 'none':
+        return None
+    photos = [ROOT / p for p in brand().get('style', {}).get('backdrop', {}).get('photos', [])]
+    if choice:
+        p = Path(choice)
+        cands = [p, ROOT / p] + [x for x in photos if x.stem == choice or x.name == choice]
+        hit = next((x for x in cands if x.exists()), None)
+        if not hit:
+            die(f'backdrop photo {choice} not found (give a path, or a name from brand.json style.backdrop.photos)')
+        return hit
+    photos = [x for x in photos if x.exists()]
+    return photos[sum(map(ord, name)) % len(photos)] if photos else None
 
 
 def comp_dir(project, name):
     return ROOT / 'projects' / project / 'graphics' / name
 
 
-def new(project, name, template, canvas, duration, feel=None, split=False, quiet=False):
+def new(project, name, template, canvas, duration, feel=None, split=False, quiet=False, tone=None, backdrop=None):
     if template not in TEMPLATES:
         die(f'unknown template {template}: use one of {", ".join(TEMPLATES)}')
     feel = feel or brand().get('style', {}).get('feel', 'smooth')
     if feel not in FEELS:
         die(f'unknown feel {feel}: use one of {", ".join(FEELS)}')
     W, H = (int(v) for v in canvas.lower().split('x'))
+    tone = tone or brand().get('style', {}).get('backdrop', {}).get('tone', 'light')
+    if tone not in ('light', 'dark'):
+        die(f'unknown tone {tone}: use light or dark')
+    photo = pick_photo(name, backdrop)
     d = comp_dir(project, name)
     if d.exists():
         die(f'{d} already exists')
@@ -103,10 +149,20 @@ def new(project, name, template, canvas, duration, feel=None, split=False, quiet
             shutil.copy(ROOT / f['file'], d / 'assets' / 'fonts')
     for js in ('gsap.min.js', 'CustomEase.min.js'):
         shutil.copy(NODE_MODULES / 'gsap' / 'dist' / js, d / 'assets' / 'js')
-    (d / 'brand.css').write_text(brand_css(W, H, split))
-    (d / 'index.html').write_text(page(name, template, W, H, duration, feel, split))
+    rel = None
+    if photo:   # a cover-sized JPEG copy keeps renders fast and the composition self-contained
+        from PIL import Image
+        im = Image.open(photo).convert('RGB')
+        k = max(W * 1.25 / im.width, H * 1.25 / im.height, 0.0)
+        if k < 1:
+            im = im.resize((int(im.width * k), int(im.height * k)), Image.LANCZOS)
+        (d / 'assets' / 'img').mkdir(parents=True, exist_ok=True)
+        im.save(d / 'assets' / 'img' / 'backdrop.jpg', quality=88)
+        rel = 'assets/img/backdrop.jpg'
+    (d / 'brand.css').write_text(brand_css(W, H, split, tone))
+    (d / 'index.html').write_text(page(name, template, W, H, duration, feel, split, tone, rel))
     if not quiet:
-        print(f'scaffolded {d} ({template}, {feel}{", split" if split else ""})\n'
+        print(f'scaffolded {d} ({template}, {feel}, {tone}{", " + photo.name if photo else ""}{", split" if split else ""})\n'
               f'  replace every placeholder with the speaker\'s words, set beat times, then: check / render')
 
 
@@ -131,7 +187,9 @@ def rebrand():
         html = idx.read_text()
         m = re.search(r'data-width="(\d+)" data-height="(\d+)"', html)
         if m:
-            (idx.parent / 'brand.css').write_text(brand_css(int(m.group(1)), int(m.group(2)), ' split"' in html))
+            tone = re.search(r'tone-(light|dark)', html)
+            (idx.parent / 'brand.css').write_text(brand_css(int(m.group(1)), int(m.group(2)), ' split' in html,
+                                                            tone.group(1) if tone else 'light'))
             print(f'rebranded {idx.parent}')
 
 
@@ -145,6 +203,8 @@ if __name__ == '__main__':
     ap.add_argument('--duration', type=float, default=6.0)
     ap.add_argument('--feel')
     ap.add_argument('--split', action='store_true')
+    ap.add_argument('--tone', choices=['light', 'dark'])
+    ap.add_argument('--backdrop', help="photo path or name from brand.json style.backdrop.photos, or 'none'")
     a = ap.parse_args()
     if a.cmd == 'list':
         print('Templates:')
@@ -158,7 +218,7 @@ if __name__ == '__main__':
     elif not (a.project and a.name):
         die('project and name are required')
     elif a.cmd == 'new':
-        new(a.project, a.name, a.template, a.canvas, a.duration, a.feel, a.split)
+        new(a.project, a.name, a.template, a.canvas, a.duration, a.feel, a.split, tone=a.tone, backdrop=a.backdrop)
     elif a.cmd == 'check':
         check(a.project, a.name)
     else:

@@ -3,13 +3,18 @@
 
 usage: captions.py <edit-plan.json> [out.ass]       (default: next to the plan, captions.ass)
 
-Styles (my-studio/brand.json → captions.style): "rise" (each line rises into place), "karaoke" (the whole line, with
-the spoken word lit in the accent colour), "pop" (1-3 big words at a time, popping in).
+Styles (my-studio/brand.json → captions.style):
+  "rise"    each line rises into place from behind a mask; its words light up from dim to full as they are spoken
+  "karaoke" the whole line, with the spoken word lit in the accent colour
+  "pop"     1-3 big words at a time: the group pops in, words appear as they are spoken, and the word being spoken
+            sits in a filled highlight box (brand colours.fill)
+Lines are wrapped by measured pixel width (the caption font's real glyph widths), not by character count.
 Timing comes from the source transcript's word timestamps mapped onto the cut's clock (each segment's words,
 offset by where that segment sits in the cut). Style comes from my-studio/brand.json: caption font, text colour,
 accent colour on the plan's "accents" phrases, soft shadow (never a hard outline). verify.py re-transcribes the
 render afterwards and flags drift.
 """
+import functools
 import json
 import re
 import sys
@@ -36,6 +41,21 @@ def font_family(path):
     return f['name'].getDebugName(1)
 
 
+@functools.lru_cache
+def _metrics(path):
+    from fontTools.ttLib import TTFont
+    f = TTFont(path)
+    os2 = f['OS/2']
+    return f.getBestCmap(), f['hmtx'].metrics, (os2.usWinAscent + os2.usWinDescent) or f['head'].unitsPerEm
+
+
+def text_width(text, path, size, spacing=1):
+    """Rendered width in pixels: libass scales a font so its win ascent + descent equals the font size."""
+    cmap, hmtx, h = _metrics(str(path))
+    adv = sum(hmtx.get(cmap.get(ord(ch), '.notdef'), (h * 0.55, 0))[0] for ch in text)
+    return adv * size / h + spacing * len(text)
+
+
 def cut_words(plan, words_by_take):
     """Words of every segment on the cut clock, from that segment's take transcript."""
     out, t = [], 0.0
@@ -60,14 +80,15 @@ def mark_accents(words, accents):
                     words[k]['gold'] = True
 
 
-def lines_of(words):
+def lines_of(words, fits=None):
     lines, cur = [], []
     txt = lambda ln: ' '.join(x['w'] for x in ln)  # noqa: E731
+    fits = fits or (lambda ws: len(txt(ws)) <= MAX_CHARS)
     for i, w in enumerate(words):
         cur.append(w)
         nxt = words[i + 1] if i + 1 < len(words) else None
         if (nxt is None or nxt['seg'] != w['seg'] or w['w'][-1] in '.?!'
-                or len(txt(cur)) + 1 + len(nxt['w']) > MAX_CHARS):
+                or not fits(cur + [nxt])):
             lines.append(cur)
             cur = []
     for i in range(len(lines) - 1):       # never end a line on a weak word mid-thought
@@ -77,7 +98,7 @@ def lines_of(words):
     out = []                               # fold a lone short word into its neighbour
     for ln in lines:
         if (out and len(ln) == 1 and len(ln[0]['w']) <= 7 and out[-1][-1]['seg'] == ln[0]['seg']
-                and len(txt(out[-1])) + 1 + len(ln[0]['w']) <= MAX_CHARS + 3):
+                and fits(out[-1] + ln)):
             out[-1] = out[-1] + ln
         else:
             out.append(ln)
@@ -112,9 +133,15 @@ def main(plan_path, out_ass=None):
     if not words:
         die('no words found inside the plan segments')
     mark_accents(words, plan.get('accents', []))
-    style = cap.get('style', 'rise')
+    # per-clip override, then per-platform default, then the brand default
+    style = (plan.get('caption_style') or cap.get('style_by_platform', {}).get(plan.get('platform', ''))
+             or cap.get('style', 'rise'))
     show = lambda w: w['w'].upper() if upper else w['w']  # noqa: E731
-    shadow = '\\blur8\\1c&H000000&\\1a&H70&'
+    margin = cap.get('margin', 100 if H > W else 160)
+    maxw = W - 2 * margin
+    fill = ass_color(cap.get('box', b['colors'].get('fill', b['colors']['accent'])))
+    ink = ass_color(cap.get('box_text', b['colors'].get('on_fill', '#1A1410')))
+    shadow = '\\bord5\\3c&H000000&\\3a&H90&\\blur10\\1c&H000000&\\1a&H55&'   # soft dark halo, readable on bright footage
     ev = []
 
     def emit(a, b, x, y, plain, body, extra='', clip_=''):
@@ -124,33 +151,48 @@ def main(plan_path, out_ass=None):
     def colour(w, on=False):
         return f'{{\\c{gold}}}{show(w)}{{\\c{white}}}' if (w['gold'] or on) else show(w)
 
+    def fits_at(px, pad=0):
+        return lambda ws: text_width(' '.join(show(x) for x in ws), font_file, px) + pad <= maxw
+
     if style == 'pop':
-        # 1-3 words at a time, bigger, popping in from 70% scale over 120 ms
+        big = int(size * cap.get('pop_scale', 1.18))
+        fits = fits_at(big, pad=2 * 16)   # room for the highlight box
         units, cur = [], []
-        for w in words:
+        for i, w in enumerate(words):
             cur.append(w)
-            if len(cur) == 3 or w['w'][-1] in '.,?!' or (len(cur) == 2 and len(' '.join(x['w'] for x in cur)) > 12):
+            nxt = words[i + 1] if i + 1 < len(words) else None
+            if (nxt is None or len(cur) == 3 or w['w'][-1] in '.,?!' or nxt['seg'] != w['seg']
+                    or not fits(cur + [nxt])):
                 units.append(cur)
                 cur = []
-        if cur:
-            units.append(cur)
-        big = int(size * 1.2)
+        hide = lambda w: f'{{\\alpha&HFF&}}{show(w)}{{\\alpha&H00&}}'  # noqa: E731
+        boxed = lambda w: (f'{{\\bord16\\3c{fill}\\3a&H00&\\c{ink}}}{show(w)}'  # noqa: E731
+                           f'{{\\bord0\\c{white}}}')
         for ui, u in enumerate(units):
-            a = u[0]['s'] - 0.03
-            b = units[ui + 1][0]['s'] - 0.03 if ui + 1 < len(units) else u[-1]['e'] + 0.4
-            b = max(b, a + 0.25)
-            pop = f'\\fs{big}\\fscx70\\fscy70\\t(0,120,\\fscx100\\fscy100)'
-            emit(a, b, W // 2, base, ' '.join(show(w) for w in u), ' '.join(colour(w) for w in u), pop)
+            ustart = u[0]['s'] - 0.03
+            uend = units[ui + 1][0]['s'] - 0.03 if ui + 1 < len(units) else u[-1]['e'] + 0.45
+            uend = max(uend, ustart + 0.3)
+            for j, w in enumerate(u):
+                a = ustart if j == 0 else w['s'] - 0.02
+                bb = u[j + 1]['s'] - 0.02 if j + 1 < len(u) else uend
+                if bb <= a:
+                    continue
+                plain = ' '.join(show(x) if k <= j else hide(x) for k, x in enumerate(u))
+                body = ' '.join(boxed(x) if k == j else colour(x) if k < j else hide(x) for k, x in enumerate(u))
+                pop = (f'\\fs{big}\\fscx72\\fscy72\\t(0,90,\\fscx106\\fscy106)\\t(90,180,\\fscx100\\fscy100)'
+                       if j == 0 else f'\\fs{big}')
+                emit(a, bb, W // 2, base, plain, body, pop)
         lines = units
     else:
-        lines = lines_of(words)
+        lines = lines_of(words, fits_at(size))
         rise = size + 24
         clip = f'\\clip(0,{base - size - 40},{W},{base + 14})'
         for li, ln in enumerate(lines):
             start = ln[0]['s'] - 0.04
             end = ln[-1]['e'] + 0.35
-            if li + 1 < len(lines):
-                end = min(end, lines[li + 1][0]['s'] - 0.04)
+            nxt_start = lines[li + 1][0]['s'] - 0.04 if li + 1 < len(lines) else None
+            if nxt_start is not None:
+                end = min(end, nxt_start)
             end = max(end, start + 0.35)
             plain = ' '.join(show(w) for w in ln)
             if style == 'karaoke':
@@ -163,14 +205,30 @@ def main(plan_path, out_ass=None):
                     body = ' '.join(colour(x, on=(k == wi)) for k, x in enumerate(ln))
                     emit(a, b, W // 2, base, plain, body, '\\fad(90,0)' if wi == 0 else '')
                 continue
-            body = ' '.join(colour(w) for w in ln)
+
+            def body_at(a, b):
+                # each word sits dim until it is spoken, then lights up to full (its accent colour if it has one)
+                parts = []
+                for w in ln:
+                    lit = w['s'] - 0.02
+                    if lit <= a:
+                        tag = '\\1a&H00&'
+                    elif lit >= b:
+                        tag = '\\1a&H55&'
+                    else:
+                        t1 = int((lit - a) * 1000)
+                        tag = f'\\1a&H55&\\t({t1},{t1 + 110},\\1a&H00&)'
+                    parts.append(f'{{{tag}}}{colour(w)}')
+                return ' '.join(parts)
             steps = [(start + k / FPS, start + (k + 1) / FPS, base + rise * (1 - k / REVEAL_FRAMES) ** 4)
                      for k in range(REVEAL_FRAMES)]
             steps = [x for x in steps if x[0] < end] + [(start + REVEAL_FRAMES / FPS, end, base)]
-            for a, bb, y in steps:
+            for si, (a, bb, y) in enumerate(steps):
                 a = min(a, end)
                 if bb > a:
-                    emit(a, bb, W // 2, y, plain, body, '', clip)
+                    out_fade = ('\\fad(0,140)' if si == len(steps) - 1 and (nxt_start is None or nxt_start - end > 0.2)
+                                else '')
+                    emit(a, bb, W // 2, y, plain, body_at(a, bb), out_fade, clip)
     head = f"""[Script Info]
 ScriptType: v4.00+
 PlayResX: {W}
