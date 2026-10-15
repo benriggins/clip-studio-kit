@@ -254,6 +254,9 @@ TEMPLATE_CSS = '''
 /* compare */
 .b-compare { margin-top: 44px; display: grid; grid-template-columns: 1fr auto 1fr; gap: 28px; align-items: stretch; }
 .vertical .b-compare { grid-template-columns: 1fr; }
+.landscape.split .b-compare { grid-template-columns: 1fr; gap: 16px; margin-top: 34px; }
+.landscape.split .b-compare .col { padding: 30px 38px; }
+.landscape.split .b-compare .vs { justify-self: start; margin-left: 38px; }
 .b-compare .col { padding: 38px; border-radius: 26px; background: var(--card); border: 1.5px solid var(--card-line); box-shadow: var(--card-shadow); }
 .b-compare .col.win { border: 3px solid var(--fill); }
 .b-compare .lab { font: 700 22px/1 var(--font-body); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
