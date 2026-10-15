@@ -73,6 +73,17 @@ Claude Code writes this one for you when it happens. It looks like:
 Claude Code couldn't find these words in the transcript: [segment]. The transcript actually says: "[exact words]" at [take, time]. Fix only that segment with the exact words, and return the full corrected CLIP_PLAN JSON.
 ```
 
+## 10. LinkedIn write-up → full video (mode E)
+Paste the write-up under the prompt instead of attaching a transcript.
+```
+Mode E: video blueprint. Turn the LinkedIn write-up below into a [60]-second [16:9 LinkedIn] video, following 07-VIDEO-BLUEPRINT.md and my brand profile.
+Script for the voiceover from the write-up's own facts. Plan [8 to 12] shots: use image-to-video from my real brand photos for anything showing our work, with a realism plan before every Grok Imagine prompt. Add explainers where they teach, music direction, and the LinkedIn post with the link for the first comment.
+Return the VIDEO_BLUEPRINT JSON, then the GROK SHOT LIST.
+
+WRITE-UP:
+[paste the write-up here]
+```
+
 ---
 
 **Tips**

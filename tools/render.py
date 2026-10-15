@@ -164,7 +164,9 @@ def main():
         fc.append(f'[{base}]format=yuv420p[v]')
 
     pic = td / 'pic.mov'
-    q = ['-crf', '28', '-preset', 'veryfast'] if a.draft else ['-crf', '17', '-preset', 'medium']
+    # the bitrate cap keeps grainy or busy footage at an uploadable size (platforms re-encode above ~20 Mb/s anyway)
+    q = (['-crf', '28', '-preset', 'veryfast'] if a.draft
+         else ['-crf', '18', '-preset', 'medium', '-maxrate', '16M', '-bufsize', '32M'])
     print(f'rendering {d["id"]}: {n} segments, {len(gfx)} graphics, {total:.1f}s, captions {"on" if use_caps else "off"} …')
     run([ffmpeg(), '-y', '-v', 'error', *ins, '-filter_complex', ';'.join(fc), '-map', '[v]', '-map', '[a]',
          '-c:v', 'libx264', *q, '-pix_fmt', 'yuv420p', '-c:a', 'pcm_s16le', pic])

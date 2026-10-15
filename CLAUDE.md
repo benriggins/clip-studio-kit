@@ -116,8 +116,9 @@ Follow `chatgpt-project/SETUP-GUIDE.md`, one step per message, and wait for "don
 2. In the project's **Instructions** box, paste the text in `chatgpt-project/PROJECT-INSTRUCTIONS.txt`. Copy it to
    their clipboard for them: `pbcopy` on Mac, `clip` on Windows.
 3. **Add files** to the project. Open the folder for them (`open chatgpt-project` on Mac, `explorer
-   chatgpt-project` on Windows) and have them drag in these six files: `01-SOP.md`, `02-CLIP-SELECTION.md`,
-   `03-PLATFORM-PLAYBOOK.md`, `04-YOUTUBE-LONG-FORM-PLAYBOOK.md`, `05-OUTPUT-FORMAT.md`, `06-BRAND-PROFILE.md`.
+   chatgpt-project` on Windows) and have them drag in these seven files: `01-SOP.md`, `02-CLIP-SELECTION.md`,
+   `03-PLATFORM-PLAYBOOK.md`, `04-YOUTUBE-LONG-FORM-PLAYBOOK.md`, `05-OUTPUT-FORMAT.md`, `06-BRAND-PROFILE.md`,
+   `07-VIDEO-BLUEPRINT.md`.
 4. Set the model to the strongest reasoning model their plan offers, and keep the same project for every video.
 5. When they confirm, create `chatgpt-project/.done`.
 
@@ -212,6 +213,31 @@ Tell the user:
   they record.
 
 Keep it short. Then ask whether they want changes. Revisions are cheap: edit the plan and re-render.
+
+### 4.6 Produce from scratch: write-up → blueprint → finished video (`tools/produce.py`)
+For videos with no footage of a speaker: the user pastes a write-up into ChatGPT with prompt 10 (mode E) and pastes
+back a VIDEO_BLUEPRINT. **You have the final say on everything below; ChatGPT's blueprint is a creative brief.**
+1. Save the JSON to `projects/<project>/<id>/blueprint.json` and the rest to `notes.md`. Check every number and
+   claim in the script against the write-up the user gave (ask them for it if you don't have it). Never add facts.
+2. `tools/produce.py prompts <blueprint>` writes `GROK-SHOTS.md`. Give the user the shot list. They (or Relay) run
+   each prompt in Grok Imagine and save the clips as `S01.mp4` … in `projects/<project>/<id>/shots/`. Look at
+   every clip (`frames.py`). Reject warped buildings, melted fixtures, invented text or logos, and people
+   wearing the brand's logo, and ask for a re-roll with a corrected prompt. A shot with no clip falls back to an
+   animated brand photo.
+3. `tools/produce.py timeline <blueprint>`: voiceover (the brand's ElevenLabs voice, `brand.json voice`), timing,
+   transitions, music and sound effects → `timeline.json`. Generated audio is cached, so iterating is free.
+4. Edit `timeline.json` like an editor: clip in-points, `pieces` (speed ramps, `reverse` for rewinds), `camera`,
+   transitions, `flashes`, `sfx`, music gain and ducking, `grade`. Build the blueprint's `on_screen` explainers
+   with `explainer.py` (§5, canvas = the timeline's) and add them to `timeline.json` `graphics` at the right times.
+5. `tools/produce.py render <timeline> --draft`, look (contact sheet, transitions, captions), fix, then render
+   final. It writes `edit-plan.json` and runs `captions.py` (from the voice's own word timings) and `render.py`
+   (graphics, loudness), so §4.4 QC applies. Finish with `POSTING.md` from the blueprint's `posting` block.
+
+### 4.7 Montage (many clips, beat-cut back-and-forth)
+`tools/produce.py montage <project> <name> <clip…> [--bpm 112] [--seconds 20] [--format 16:9] [--music f.mp3]`
+builds a starting `timeline.json`: slow-mo intro → A/B cuts tightening to 1-beat cuts → a rewind → a speed-ramped
+drop with a flash, punch and hit → a hero push-in. With no `--music` it generates a bed from `brand.json music`.
+Then refine it in `timeline.json` (§4.6 step 4) and render. Saved favourites go in `my-studio/templates/`.
 
 ---
 
@@ -312,6 +338,7 @@ Platform specs:
 | `qc.py <video> [plan]` | loudness, true peak, black frames, contact sheet, join frames |
 | `fetch_fonts.py` | downloads the brand's Google Fonts |
 | `stylelab.py looks` | gallery of slide templates, feels and caption styles in their brand → `my-studio/stylelab/gallery.html` |
+| `produce.py prompts/timeline/montage/render` | write-up blueprints and montages → `timeline.json` → finished video (§4.6, §4.7) |
 | `stylelab.py clip <clip-plan> <id>` | one of their clips edited three ways (pace, framing, captions) → `compare.html` |
 
 Edit-plan fields Claude Code may change by hand:
@@ -330,7 +357,8 @@ Edit-plan fields Claude Code may change by hand:
    the user sends it themselves.
 2. Never invent the speaker's words, numbers or results; not in cuts, captions, graphics or posting copy.
 3. Never post to social media or send anything on the user's behalf. Delivery means files in `exports/`.
-4. Free tools only. If something would need a paid service, say so and offer the free path.
+4. Free tools only, except services the user already pays for and has set up (for example ElevenLabs for voice,
+   music and sound in `produce.py`). If something new would need a paid service, say so and offer the free path.
 5. Keep the user's original files untouched. Everything you make goes in `projects/`.
 6. If a tool fails, read the error, fix the cause, and say in one line what happened. Don't hand them a stack
    trace.

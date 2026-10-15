@@ -11,8 +11,8 @@ In ChatGPT (web or desktop app), find **Projects** in the left sidebar → **New
 Open the project → **Instructions** (sometimes under the project's ⋯ menu or settings) → paste. Claude Code has
 already copied the text to your clipboard. It's the contents of `PROJECT-INSTRUCTIONS.txt`. Save.
 
-### Step 3: add the six files
-Click **Add files** (or drag them in). Claude Code opens this folder for you. Add all six:
+### Step 3: add the seven files
+Click **Add files** (or drag them in). Claude Code opens this folder for you. Add all seven:
 
 | File | What it teaches ChatGPT |
 |---|---|
@@ -22,13 +22,14 @@ Click **Add files** (or drag them in). Claude Code opens this folder for you. Ad
 | `04-YOUTUBE-LONG-FORM-PLAYBOOK.md` | titles, thumbnails, hooks and structure for full videos |
 | `05-OUTPUT-FORMAT.md` | the exact JSON Claude Code reads |
 | `06-BRAND-PROFILE.md` | you: audience, voice, offer, editing style |
+| `07-VIDEO-BLUEPRINT.md` | turning a write-up into a full video blueprint, with Grok Imagine prompts |
 
 ### Step 4: pick the model
 Choose the **strongest reasoning model** your plan offers (a "Thinking" model) for planning edits. It reads
 long transcripts more carefully.
 
 ### Step 5: tell Claude Code "done"
-That's it. From now on: **new chat in this project → attach `transcript.txt` → paste a prompt from
+That's it. From now on: **new chat in this project → attach `transcript.txt` (or paste a write-up) → paste a prompt from
 `PROMPTS.md`**, and paste the answer back into Claude Code.
 
 ---
