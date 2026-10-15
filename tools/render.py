@@ -125,7 +125,13 @@ def main():
             nin += 1
             # the region of the live frame shown in the card: a whole head (about 2.3x the face height), scaled to fit
             zoom = 1.0
-            if fs.get('src', 'auto') == 'auto':      # centre on the speaker's face across the segments it covers
+            if fs.get('src', 'auto') == 'auto' and not any(sg.get('face') for sg in d['segments']):
+                fs = {**fs, 'src': 'full'}           # no speaker to centre on (b-roll, generated shots): show the whole shot
+            if fs.get('src') == 'full':
+                ar = fs['w'] / fs['h']
+                rw, rh = (int(H * ar) // 2 * 2, H) if W / H > ar else (W, int(W / ar) // 2 * 2)
+                sx, sy = (W - rw) // 2, (H - rh) // 2
+            elif fs.get('src', 'auto') == 'auto':      # centre on the speaker's face across the segments it covers
                 spans, t = [], 0.0
                 for sg in d['segments']:
                     if t < t0 + gdur and t + sg['out'] - sg['in'] > t0 and sg.get('face'):
@@ -137,7 +143,7 @@ def main():
                 rw, rh = int(fs['w'] * zoom) // 2 * 2, int(fs['h'] * zoom) // 2 * 2
                 sx = int(min(max(0, f['cx'] - rw / 2), W - rw))
                 sy = int(min(max(0, f['cy'] - rh * 0.45), H - rh))
-            else:
+            elif fs.get('src') != 'full':
                 sx, sy = fs['src']
                 rw, rh = fs['w'], fs['h']
             fc.append(f'[vs{k}]crop={rw}:{rh}:{sx}:{sy},scale={fs["w"]}:{fs["h"]},format=gbrap[c{k}];[{mi}:v]format=gray[m{k}];'

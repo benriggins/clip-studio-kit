@@ -237,6 +237,8 @@ TEMPLATE_CSS = '''
 /* steps: "how it works" cards */
 .b-steps { margin-top: 52px; display: flex; flex-direction: column; gap: 24px; }
 .landscape .b-steps { display: grid; grid-template-columns: repeat(3, 1fr); }
+.landscape.split .b-steps { display: flex; flex-direction: column; gap: 18px; }
+.landscape.split .b-step { flex-direction: row; align-items: center; padding: 24px 30px; }
 .b-step { display: flex; align-items: center; gap: 34px; padding: 34px 38px; border-radius: 30px; background: var(--card);
   border: 1.5px solid var(--card-line); box-shadow: var(--card-shadow); }
 .landscape .b-step { flex-direction: column; align-items: flex-start; }
@@ -266,11 +268,11 @@ TEMPLATE_CSS = '''
 .b-stat .pre { font-size: .5em; margin: .12em .06em 0 0; color: var(--accent); }
 .b-stat .unit { font-size: .5em; margin: .12em 0 0 .08em; color: var(--accent); }
 .b-stat .odo { display: inline-flex; }
-.b-stat .dg { display: inline-block; height: 1em; overflow: hidden; -webkit-mask-image: linear-gradient(transparent, #000 18%, #000 82%, transparent);
-  mask-image: linear-gradient(transparent, #000 18%, #000 82%, transparent); }
+.b-stat .dg { display: inline-block; height: 1.16em; overflow: hidden; -webkit-mask-image: linear-gradient(transparent, #000 7%, #000 93%, transparent);
+  mask-image: linear-gradient(transparent, #000 7%, #000 93%, transparent); }
 .b-stat .strip { display: flex; flex-direction: column; }
-.b-stat .strip span { display: block; height: 1em; line-height: 1; text-align: center; }
-.b-stat .sep { display: inline-block; line-height: 1; }
+.b-stat .strip span { display: block; height: 1.16em; line-height: 1.16; text-align: center; }
+.b-stat .sep { display: inline-block; line-height: 1.16; }
 .b-statline { display: block; width: 78%; height: 46px; margin-top: 4px; overflow: visible; }
 .b-statline path { fill: none; stroke: var(--fill); stroke-width: 7; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
 .b-statcard .rule { margin-top: 30px; height: 2px; background: var(--card-line); }

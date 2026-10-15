@@ -68,7 +68,7 @@ def brand_css(W, H, split=False, tone='light'):
   --card-shadow: 0 18px 50px rgba(60, 40, 20, .10), 0 2px 6px rgba(60, 40, 20, .06);
   --rail: color-mix(in srgb, {c['text']} 12%, transparent);
   --font-display: "{f['display']['family']}", Georgia, serif; --font-body: "{f['body']['family']}", system-ui, sans-serif;
-  --h1: {(96 if split else 120) if vertical else (72 if split else 92)}px; --step: {58 if vertical else (36 if split else 42)}px;
+  --h1: {(96 if split else 120) if vertical else (80 if split else 92)}px; --step: {58 if vertical else (46 if split else 42)}px;
 }}
 .tone-dark {{
   --text: #FFFFFF; --muted: rgba(255, 255, 255, .74); --accent: {c.get('accent_on_dark', fill)};

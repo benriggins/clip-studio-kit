@@ -82,7 +82,11 @@ def tts(text, voice=None):
     v = {**brand().get('voice', {}), **(voice or {})}
     if not v.get('voice_id'):
         die('No voice yet: set brand.json voice.voice_id (Claude Code saves the chosen IMKAT voice there).')
-    body = {'text': text, 'model_id': v.get('model', 'eleven_multilingual_v2'),
+    say = v.get('say', {})            # pronunciation aliases, e.g. {"IMKAT": "I'm-Kat"}; captions keep the real word
+    spoken = ' '.join(next((al for k, al in say.items() if w.strip('.,!?;:').upper() == k.upper()), None) and
+                      w.replace(w.strip('.,!?;:'), next(al for k, al in say.items() if w.strip('.,!?;:').upper() == k.upper()))
+                      or w for w in text.split())
+    body = {'text': spoken, 'model_id': v.get('model', 'eleven_multilingual_v2'),
             'voice_settings': v.get('settings', {'stability': 0.5, 'similarity_boost': 0.8, 'style': 0.15,
                                                   'use_speaker_boost': True})}
     mp3 = _cache('voice', {**body, 'v': v['voice_id']}, '.mp3')
@@ -104,6 +108,10 @@ def tts(text, voice=None):
             prev_e = b
         if cur:
             words.append({'w': cur, 's': round(s0, 3), 'e': round(prev_e, 3)})
+        orig = text.split()
+        if len(orig) == len(words):   # one alias token per word: show the real spelling in captions
+            for w, o in zip(words, orig):
+                w['w'] = o
         meta.write_text(json.dumps(words))
     return mp3, json.loads(meta.read_text())
 
@@ -173,14 +181,28 @@ def montage(project, name, clips, bpm=112, seconds=20, fmt='16:9', music_file=No
 
     n = len(srcs)
     plan, t = [], 0.0
-    # (beats, source index, pieces as [beats_out, speed, opts], camera, transition)
-    seq = [(4, 0, [[4, 0.5, {}]], 'push', ('fade', 0.5))]
-    seq += [(2, i % n, [[2, 1.0, {}]], 'drift', ('whip' if i % 2 else 'whip-right', 0.25)) for i in range(1, 5)]
-    seq += [(1, i % n, [[1, 1.0, {}]], 'punch', ('cut', 0)) for i in range(5, 9)]
-    seq += [(2, 2 % n, [[0.5, 1.0, {}], [0.5, 1.0, {'reverse': True}], [1, 1.0, {}]], 'drift', ('blur', 0.2))]
-    seq += [(3, 3 % n, [[1, 1.0, {}], [1.25, 0.4, {}], [0.75, 1.8, {}]], 'punch', ('flash', 0.15))]
-    seq += [(1, i % n, [[1, 1.3, {}]], 'punch', ('cut', 0)) for i in range(4)]
-    seq += [(2, 0, [[2, 1.0, {}]], 'drift', ('whip', 0.25)), (4, n - 1, [[4, 0.8, {}]], 'hero', ('zoom', 0.35))]
+    hold = max(4, int(round((seconds or n * 4.5) / beat / n)))      # beats per clip when each clip is used once
+    if style == 'back-and-forth' and n >= 10:
+        # enough material for fast A/B cutting without repeats
+        seq = [(4, 0, [[4, 0.5, {}]], 'push', ('fade', 0.5))]
+        seq += [(2, i, [[2, 1.0, {}]], 'drift', ('whip' if i % 2 else 'whip-right', 0.25)) for i in range(1, n // 2)]
+        seq += [(1, i, [[1, 1.0, {}]], 'punch', ('cut', 0)) for i in range(n // 2, n - 2)]
+        seq += [(3, n - 2, [[1, 1.0, {}], [1.25, 0.4, {}], [0.75, 1.8, {}]], 'punch', ('flash', 0.15))]
+        seq += [(4, n - 1, [[4, 0.8, {}]], 'hero', ('zoom', 0.35))]
+    else:
+        # each clip once, held long enough to breathe; motion and one speed ramp keep it alive
+        cams = ['push', 'drift', 'pull', 'drift', 'hero']
+        trs = [('fade', 0.6), ('zoom', 0.45), ('blur', 0.35), ('slide', 0.45), ('fade', 0.6)]
+        seq = []
+        for i in range(n):
+            pcs = [[hold, 0.85, {}]]
+            if i == n // 2:          # one slow-motion breath in the middle
+                pcs = [[hold * 0.4, 1.0, {}], [hold * 0.6, 0.5, {}]]
+            seq.append((hold, i, pcs, cams[i % len(cams)] if i < n - 1 else 'hero',
+                        ('cut', 0) if i == 0 else trs[i % len(trs)]))
+        if n < 10:
+            print(f'note: {n} clips → one use each, ~{hold * beat:.1f}s per shot. For fast back-and-forth cutting '
+                  f'without repeats, send {max(10, 2 * n)}+ clips.')
     total_beats = sum(s[0] for s in seq)
     scale = (seconds / beat) / total_beats if seconds else 1.0
     out_clips, flashes, sfx = [], [], []
@@ -194,11 +216,8 @@ def montage(project, name, clips, bpm=112, seconds=20, fmt='16:9', music_file=No
         start = take(src, sum(p[0] for p in pcs))
         out_clips.append({'src': os.path.relpath(src, ROOT), 'in': start, 'pieces': pcs, 'camera': cam,
                           'transition': {'type': tr, 'dur': tdur}, 'audio': None})
-        if tr in ('whip', 'whip-right', 'zoom', 'blur'):
-            sfx.append({'kind': 'whoosh', 'at': round(max(0, t - 0.25), 3), 'gain_db': -14})
-        if tr == 'flash' or (cam == 'punch' and beats >= 4):
+        if tr == 'flash':
             flashes.append(round(t, 3))
-            sfx.append({'kind': 'hit', 'at': round(t, 3), 'gain_db': -10})
         t += beats * beat * scale - (tdur if tr != 'cut' else 0)
     total = t + 0.5
     mus = {'file': os.path.relpath(Path(music_file).resolve(), ROOT) if music_file else None,
@@ -468,7 +487,8 @@ def render(tl_path, draft=False):
         (project / 'transcript' / take).mkdir(parents=True, exist_ok=True)
         (project / 'transcript' / take / 'words.json').write_text(json.dumps(words))
     plan = {'id': tl['id'], 'title': tl.get('title', ''), 'platform': tl.get('platform', ''),
-            'canvas': tl['canvas'], 'accents': tl.get('accents', []), 'graphics': tl.get('graphics', []),
+            'canvas': tl['canvas'], 'accents': tl.get('accents', []),
+            'graphics': [{'sfx': False, **g} for g in tl.get('graphics', [])],
             'segments': [{'id': 'S1', 'take': take, 'source': str(base), 'in': 0.0, 'out': round(total, 3),
                           'text': ' '.join(v['text'] for v in tl.get('voice', []))}]}
     if tl.get('caption_style'):
