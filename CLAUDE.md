@@ -25,10 +25,12 @@ Check the state, and do only the steps not yet done:
 3. Has the ChatGPT Project been set up? Check `chatgpt-project/.done`. If not, **guide the Project setup** (§3).
 4. Then explain the daily workflow in five short lines (§4) and ask for their first video.
 
-**Every session after that:** read `my-studio/MY-STYLE.md` before editing anything. It is the user's own
-editing SOP, and it wins over the defaults in this file. When they state a new preference ("bigger captions from
+**Every session after that:** read `PRODUCTION-STANDARDS.md` (the house rules for every brand: footage, voice,
+music, captions, slides, delivery) and `my-studio/MY-STYLE.md` before editing anything. `MY-STYLE.md` is the
+user's own editing SOP, and it wins over both. When they state a new preference ("bigger captions from
 now on"), update `my-studio/brand.json` and `MY-STYLE.md` (and `chatgpt-project/06-BRAND-PROFILE.md` if it affects
-ChatGPT), then commit in `my-studio`.
+ChatGPT), then commit in `my-studio`. If the feedback is about taste in general ("the whooshes sound cheap",
+"stop repeating shots"), also add it to `PRODUCTION-STANDARDS.md` in the kit, so the next company gets it too.
 
 ### Two folders, two repos
 - **The kit** (this folder) is a clone of the public repo. Update it any time with `git pull`. Never commit the
@@ -102,7 +104,18 @@ If they have a website or social profile, offer to read it and propose answers t
 3. Write `my-studio/MY-STYLE.md` from `brand/MY-STYLE.template.md` and `chatgpt-project/06-BRAND-PROFILE.md` from
    `brand/BRAND-PROFILE.template.md`. Use plain words and fill every `{{…}}`. For anything not chosen yet
    (pace, framing, splice style), write "default; choose on first video".
-4. Commit: `git -C my-studio add -A && git -C my-studio commit -qm "Brand and style"`.
+4. **Voice** (if they'll make produced videos, §4.6): ask for a short brief (gender, energy, register: for
+   example "male, a little corporate-sales, some life, no drama") and how the brand name is pronounced. Generate
+   4–6 ElevenLabs voice previews from the brief, saying a real line from their website, and let them pick by ear.
+   Save it to `brand.json voice` (`voice_id`, `model`, `say` aliases for the brand name). Transcribe a test line
+   back with Whisper to prove the name is said right.
+5. **Music palette:** generate 4–6 short beds in different styles (start from `brand.example.json music.palette`)
+   and let them pick the ones they like. Save the liked styles and the rejected ones in `brand.json music`.
+6. **Photos:** collect 6–10 real project photos for slide backdrops (from their site, with permission) into
+   `my-studio/backdrops/photos/`, list them in `brand.json style.backdrop.photos`, and name them in
+   `06-BRAND-PROFILE.md` so ChatGPT can ask for them by name. Save the real logo (SVG or PNG) in
+   `my-studio/backdrops/`.
+7. Commit: `git -C my-studio add -A && git -C my-studio commit -qm "Brand and style"`.
 
 **Style Lab, part two** happens on their first real video (§4.3): pace, framing and splice style, chosen by
 watching their own footage edited three ways.
@@ -223,15 +236,21 @@ back a VIDEO_BLUEPRINT. **You have the final say on everything below; ChatGPT's 
    each prompt in Grok Imagine and save the clips as `S01.mp4` … in `projects/<project>/<id>/shots/`. Look at
    every clip (`frames.py`). Reject warped buildings, melted fixtures, invented text or logos, and people
    wearing the brand's logo, and ask for a re-roll with a corrected prompt. A shot with no clip falls back to an
-   animated brand photo.
+   animated brand photo (set its `visual.photo` to a backdrop photo name). Map every clip to **one** shot; never
+   reuse a clip (`PRODUCTION-STANDARDS.md` §1). If a named photo is missing, use the closest real one and say so.
 3. `tools/produce.py timeline <blueprint>`: voiceover (the brand's ElevenLabs voice, `brand.json voice`), timing,
    transitions, music and sound effects → `timeline.json`. Generated audio is cached, so iterating is free.
+   Transcribe every voice line back with Whisper and fix mispronunciations with `voice.say` aliases before
+   building anything on the timings.
 4. Edit `timeline.json` like an editor: clip in-points, `pieces` (speed ramps, `reverse` for rewinds), `camera`,
    transitions, `flashes`, `sfx`, music gain and ducking, `grade`. Build the blueprint's `on_screen` explainers
    with `explainer.py` (§5, canvas = the timeline's) and add them to `timeline.json` `graphics` at the right times.
 5. `tools/produce.py render <timeline> --draft`, look (contact sheet, transitions, captions), fix, then render
    final. It writes `edit-plan.json` and runs `captions.py` (from the voice's own word timings) and `render.py`
    (graphics, loudness), so §4.4 QC applies. Finish with `POSTING.md` from the blueprint's `posting` block.
+6. Treat the blueprint as a brief: drop stock sound effects, merge repeated slides, keep AI clips at normal
+   speed, and flag the claim the video rests on for the user to verify. Tell the user in a few lines what you
+   changed and why, and deliver one alternate music bed.
 
 ### 4.7 Montage (many clips, beat-cut back-and-forth)
 `tools/produce.py montage <project> <name> <clip…> [--bpm 112] [--seconds 20] [--format 16:9] [--music f.mp3]`
@@ -360,5 +379,7 @@ Edit-plan fields Claude Code may change by hand:
 4. Free tools only, except services the user already pays for and has set up (for example ElevenLabs for voice,
    music and sound in `produce.py`). If something new would need a paid service, say so and offer the free path.
 5. Keep the user's original files untouched. Everything you make goes in `projects/`.
-6. If a tool fails, read the error, fix the cause, and say in one line what happened. Don't hand them a stack
+6. Follow `PRODUCTION-STANDARDS.md`: never reuse footage, no stock whooshes, real logo only, no generated people
+   in the brand's uniform, no image passed off as a project it isn't.
+7. If a tool fails, read the error, fix the cause, and say in one line what happened. Don't hand them a stack
    trace.

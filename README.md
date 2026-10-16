@@ -46,7 +46,8 @@ clean video.
 | Folder | What it is |
 |---|---|
 | `CLAUDE.md` | the operating manual Claude Code follows |
-| `chatgpt-project/` | the ChatGPT Project: instructions, 5 reference files, prompts, setup guide |
+| `PRODUCTION-STANDARDS.md` | the house rules for every brand: footage, voice, music, captions, slides, delivery |
+| `chatgpt-project/` | the ChatGPT Project: instructions, 7 reference files, prompts, setup guide |
 | `brand/` | the brand interview and templates for your profile and style SOP |
 | `tools/` | transcription, cut planning, rendering, captions, explainers, checks, Style Lab |
 | `setup/` | installers for Mac, Windows and Linux |

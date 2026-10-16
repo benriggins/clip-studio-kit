@@ -8,7 +8,7 @@ channel or Instagram, offer to read it first and propose the answers for them to
 2. **What you teach or talk about:** one sentence.
 3. **Who it's for:** describe the one person you most want to reach.
 4. **Your promise:** what changes for that person after watching you?
-5. **Voice:** three words for how you sound (for example: direct, warm, funny). Anything you never want to sound
+5. **Voice** (saved as `voice.tone`; the ElevenLabs voice is picked later, by ear): three words for how you sound (for example: direct, warm, funny). Anything you never want to sound
    like?
 6. **Your offer or call to action:** a free download, a newsletter, a product, a booking link? Its name and URL.
    (It's fine to say "none yet".)

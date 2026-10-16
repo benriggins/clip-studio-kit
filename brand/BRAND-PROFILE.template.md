@@ -9,7 +9,8 @@ edited. Claude Code keeps it up to date; when it changes, replace the file in th
 - **Topic:** {{niche}}
 - **Audience:** {{audience}}
 - **Promise:** {{promise}}
-- **Voice:** {{voice}}
+- **Voice (how they sound):** {{voice.tone}}
+- **Voiceover voice:** {{voice.name}} ({{voice.brief}}). The brand name is said "{{voice.say}}".
 - **What they film:** {{filming}}
 
 ## Call to action
@@ -29,6 +30,15 @@ edited. Claude Code keeps it up to date; when it changes, replace the file in th
 - **Explainer slides they like:** {{style.templates}}. Suggest explainers of these types first.
 - **Graphics density:** {{style.graphics_density}}
 
+## Brand photos (name these in blueprints; never ask for a photo not on this list)
+{{style.backdrop.photos}}
+
+## Music
+- **Liked styles:** {{music.liked}}
+- **Never:** {{music.avoid}}
+
 ## Never
 - Never say or imply: {{never_say}}
 - Never invent numbers, results, quotes or claims. Use the speaker's exact words only.
+- Never reuse a clip for two shots, never ask for stock whooshes or hits, and never put the brand's logo on
+  generated people.

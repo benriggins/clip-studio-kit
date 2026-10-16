@@ -5,7 +5,16 @@
   "niche": "Practical AI for small-business owners",
   "audience": "Owners of 1-20 person service businesses who are curious about AI but short on time",
   "promise": "Use AI to win back 10 hours a week without losing the human touch",
-  "voice": "Direct, warm, practical. Plain words. No hype.",
+  "voice": {
+    "tone": "Direct, warm, practical. Plain words. No hype.",
+    "voice_id": "",
+    "name": "",
+    "model": "eleven_multilingual_v2",
+    "brief": "chosen by ear in setup, e.g. \"male, a little corporate-sales, some life, no drama\"",
+    "say": {
+      "Example": "Ex-AM-pul"
+    }
+  },
   "offer": {
     "name": "Free AI workflow checklist",
     "url": "https://example.com/checklist",
@@ -41,16 +50,26 @@
       "google": "ofl/inter/Inter[opsz,wght].ttf"
     },
     "captions": {
-      "family": "Anton",
-      "file": "fonts/Anton-Regular.ttf",
-      "google": "ofl/anton/Anton-Regular.ttf"
+      "family": "Montserrat ExtraBold",
+      "file": "fonts/Montserrat-ExtraBold.ttf",
+      "google": "ofl/montserrat/Montserrat[wght].ttf",
+      "instance": {
+        "wght": 800
+      }
     }
   },
   "captions": {
     "style": "rise",
     "text": "#FFFFFF",
     "accent": "#E8B44A",
-    "uppercase": true
+    "uppercase": true,
+    "style_by_platform": {
+      "linkedin": "rise",
+      "youtube": "rise",
+      "instagram": "pop",
+      "youtube_shorts": "pop",
+      "tiktok": "pop"
+    }
   },
   "transcription": {
     "model": "small.en",
@@ -72,6 +91,40 @@
     "crop": "alternate",
     "splice": "argument",
     "graphics_density": "medium",
-    "chosen_on_footage": false
+    "chosen_on_footage": false,
+    "backdrop": {
+      "tone": "dark",
+      "tones": [
+        "dark",
+        "light"
+      ],
+      "photos": [
+        "my-studio/backdrops/photos/project-1.jpg"
+      ],
+      "logo": "my-studio/backdrops/logo.svg"
+    }
+  },
+  "music": {
+    "rules": "A fresh bed per video from the liked styles, plus one alternate. Instrumental only.",
+    "avoid": [
+      "corporate elevator",
+      "dramatic trailer swells",
+      "EDM drop",
+      "vocals",
+      "stock ukulele",
+      "warm cinematic piano"
+    ],
+    "liked": [
+      "modern-pulse",
+      "elegant-minimal",
+      "warm-groove",
+      "modern-chill"
+    ],
+    "palette": {
+      "modern-pulse": "modern upbeat lifestyle brand track, crisp muted electric guitar plucks, warm sub bass, tight clap and hi-hat groove, airy synth chords, optimistic and confident, 104 bpm, clean premium production, no vocals",
+      "elegant-minimal": "elegant minimal ambient score, soft piano chords with long reverb, warm cello swell, subtle ticking percussion, calm and premium, 90 bpm, no vocals",
+      "warm-groove": "modern warm lifestyle instrumental, laid-back groove with soft live drums and shaker, round bass, clean electric guitar chords, Rhodes keys, sunny and confident, tasteful, 100 bpm, no vocals, not corporate, no dramatic swells",
+      "modern-chill": "modern chill pop instrumental, warm muted synth chords, soft side-chained pulse, crisp minimal beat, airy pads, smooth and stylish, calm confidence, 98 bpm, no vocals, no build-ups, no drama"
+    }
   }
 }

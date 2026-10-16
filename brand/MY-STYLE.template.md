@@ -21,6 +21,11 @@ Claude Code ("bigger captions from now on") and it will update this file for you
 - **How many:** {{style.graphics_density}} (light = 1 per clip · medium = 2–3 per 45 s · heavy = most of the runtime)
 - Labels are always my own words.
 
+## Voice and music
+- **Voiceover:** {{voice.name}} ({{voice.brief}}). Said like this: {{voice.say}}
+- **Music I like:** {{music.liked}}. **Never:** {{music.avoid}}
+- No stock whooshes or hits.
+
 ## Cutting
 - **Pace:** {{style.pace}}
 - **Framing:** {{style.crop}}
