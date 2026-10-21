@@ -17,3 +17,6 @@ chatgpt-project/06-BRAND-PROFILE.md
 .DS_Store
 __pycache__/
 chatgpt-project/.done
+
+# downloaded helper programs (DeepFilterNet)
+bin/
