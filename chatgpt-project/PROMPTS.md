@@ -99,3 +99,15 @@ Return the CAROUSEL_PLAN JSON.
 - You can mix: "Do prompt 3, then also give me 2 Reels from the finished video."
 - Change your mind about your style ("tighter cuts from now on")? Tell Claude Code. It updates your brand profile
   and tells you to re-upload `06-BRAND-PROFILE.md`.
+
+
+## 12. Cinema reel (the default for footage-led brands)
+Attach `transcript.txt`, then paste:
+```
+Plan the 2 or 3 strongest reels in this video, directed per 09-CINEMA-PLAYBOOK.md. For each clip: the CLIP_PLAN
+segments (exact words, tight pace, hook in the first 3 seconds, payoff answers the hook, CTA from the brand
+profile), 2 to 4 accents, and a full "cinema" block from 10-SHOT-AND-MOTION-LIBRARY.md: 2 to 4 B-roll shots with
+GPT Image 2.5 still prompts (realism plan first) and Grok Imagine motion prompts, the glass UI and big-word moments,
+sound cues and the music vibe, every one tied to the exact words it fires on. Something new on screen every 1.5
+to 3 seconds. One JSON block, then stop.
+```

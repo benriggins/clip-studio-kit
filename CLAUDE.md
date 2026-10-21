@@ -129,9 +129,9 @@ Follow `chatgpt-project/SETUP-GUIDE.md`, one step per message, and wait for "don
 2. In the project's **Instructions** box, paste the text in `chatgpt-project/PROJECT-INSTRUCTIONS.txt`. Copy it to
    their clipboard for them: `pbcopy` on Mac, `clip` on Windows.
 3. **Add files** to the project. Open the folder for them (`open chatgpt-project` on Mac, `explorer
-   chatgpt-project` on Windows) and have them drag in these eight files: `01-SOP.md`, `02-CLIP-SELECTION.md`,
+   chatgpt-project` on Windows) and have them drag in these ten files: `01-SOP.md`, `02-CLIP-SELECTION.md`,
    `03-PLATFORM-PLAYBOOK.md`, `04-YOUTUBE-LONG-FORM-PLAYBOOK.md`, `05-OUTPUT-FORMAT.md`, `06-BRAND-PROFILE.md`,
-   `07-VIDEO-BLUEPRINT.md`, `08-CAROUSEL-BLUEPRINT.md`.
+   `07-VIDEO-BLUEPRINT.md`, `08-CAROUSEL-BLUEPRINT.md`, `09-CINEMA-PLAYBOOK.md`, `10-SHOT-AND-MOTION-LIBRARY.md`.
 4. Set the model to the strongest reasoning model their plan offers, and keep the same project for every video.
 5. When they confirm, create `chatgpt-project/.done`.
 

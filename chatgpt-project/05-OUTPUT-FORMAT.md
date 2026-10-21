@@ -50,6 +50,13 @@ Field names and value formats must be exactly as below.
 }
 ```
 
+## The "cinema" block (add to every clip in modes A to C)
+Each clip may carry a `cinema` object: `music` (the vibe), `broll[]` (`on_text`, `seconds`, `focus`, `still`,
+`motion`), `ui[]` (kinds and fields from 10-SHOT-AND-MOTION-LIBRARY.md, each with `on_text`, and `out_text` when it
+leaves), `sound[]` (`cue`, `on_text`). Every `on_text` / `out_text` must be words from that clip's segments, copied
+exactly. See the full example in 10-SHOT-AND-MOTION-LIBRARY.md section F. Claude Code builds all of it and may move
+a moment a few words earlier or later to fit the motion.
+
 ## Field rules
 
 | Field | Rule |
