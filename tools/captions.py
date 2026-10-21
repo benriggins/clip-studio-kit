@@ -167,7 +167,7 @@ def main(plan_path, out_ass=None):
         for i, w in enumerate(words):
             cur.append(w)
             nxt = words[i + 1] if i + 1 < len(words) else None
-            if (nxt is None or len(cur) == cap.get('max_words', 3) or w['w'][-1] in '.,?!' or nxt['seg'] != w['seg']
+            if (nxt is None or len(cur) == cap.get('max_words', 3) or (style == 'cinema' and nxt['gold'] != w['gold']) or w['w'][-1] in '.,?!' or nxt['seg'] != w['seg']
                     or not fits(cur + [nxt])):
                 units.append(cur)
                 cur = []
