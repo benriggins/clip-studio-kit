@@ -8,6 +8,8 @@ Styles (my-studio/brand.json → captions.style):
   "karaoke" the whole line, with the spoken word lit in the accent colour
   "pop"     1-3 big words at a time: the group pops in, words appear as they are spoken, and the word being spoken
             sits in a filled highlight box (brand colours.fill)
+  "viral"   1-3 heavy uppercase words at a time with a thick dark outline: the group pops in, the word being spoken
+            turns the accent colour and grows, and accent phrases sit in a box (captions.box / box_text)
 Lines are wrapped by measured pixel width (the caption font's real glyph widths), not by character count.
 Timing comes from the source transcript's word timestamps mapped onto the cut's clock (each segment's words,
 offset by where that segment sits in the cut). Style comes from my-studio/brand.json: caption font, text colour,
@@ -154,7 +156,9 @@ def main(plan_path, out_ass=None):
     def fits_at(px, pad=0):
         return lambda ws: text_width(' '.join(show(x) for x in ws), font_file, px) + pad <= maxw
 
-    if style == 'pop':
+    if style == 'viral':
+        shadow = '\\bord9\\3c&H000000&\\3a&H00&\\blur1\\1c&H000000&'   # thick hard outline
+    if style in ('pop', 'viral'):
         big = int(size * cap.get('pop_scale', 1.18))
         fits = fits_at(big, pad=2 * 16)   # room for the highlight box
         units, cur = [], []
@@ -178,9 +182,23 @@ def main(plan_path, out_ass=None):
                 if bb <= a:
                     continue
                 plain = ' '.join(show(x) if k <= j else hide(x) for k, x in enumerate(u))
-                body = ' '.join(boxed(x) if k == j else colour(x) if k < j else hide(x) for k, x in enumerate(u))
+                if style == 'viral':
+                    def vw(k, x):
+                        if k > j:
+                            return hide(x)
+                        if x['gold']:
+                            return (f'{{\\bord14\\3c{fill}\\c{ink}}}{show(x)}'
+                                    f'{{\\bord7\\3c&H000000&\\c{white}}}')
+                        if k == j:
+                            return f'{{\\c{gold}\\fscx112\\fscy112}}{show(x)}{{\\c{white}\\fscx100\\fscy100}}'
+                        return show(x)
+                    body = ' '.join(vw(k, x) for k, x in enumerate(u))
+                else:
+                    body = ' '.join(boxed(x) if k == j else colour(x) if k < j else hide(x) for k, x in enumerate(u))
                 pop = (f'\\fs{big}\\fscx72\\fscy72\\t(0,90,\\fscx106\\fscy106)\\t(90,180,\\fscx100\\fscy100)'
                        if j == 0 else f'\\fs{big}')
+                if style == 'viral':
+                    pop = '\\bord7\\3c&H000000&' + pop
                 emit(a, bb, W // 2, base, plain, body, pop)
         lines = units
     else:
