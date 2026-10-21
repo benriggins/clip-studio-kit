@@ -10,6 +10,8 @@ Styles (my-studio/brand.json → captions.style):
             sits in a filled highlight box (brand colours.fill)
   "viral"   1-3 heavy uppercase words at a time with a thick dark outline: the group pops in, the word being spoken
             turns the accent colour and grows, and accent phrases sit in a box (captions.box / box_text)
+  "cinema"  premium editorial: 1-3 white words at a time, soft shadow, no colour; accent phrases switch to the
+            display italic (captions.accent_font, e.g. Fraunces) a touch larger
 Lines are wrapped by measured pixel width (the caption font's real glyph widths), not by character count.
 Timing comes from the source transcript's word timestamps mapped onto the cut's clock (each segment's words,
 offset by where that segment sits in the cut). Style comes from my-studio/brand.json: caption font, text colour,
@@ -158,14 +160,14 @@ def main(plan_path, out_ass=None):
 
     if style == 'viral':
         shadow = '\\bord9\\3c&H000000&\\3a&H00&\\blur1\\1c&H000000&'   # thick hard outline
-    if style in ('pop', 'viral'):
+    if style in ('pop', 'viral', 'cinema'):
         big = int(size * cap.get('pop_scale', 1.18))
         fits = fits_at(big, pad=2 * 16)   # room for the highlight box
         units, cur = [], []
         for i, w in enumerate(words):
             cur.append(w)
             nxt = words[i + 1] if i + 1 < len(words) else None
-            if (nxt is None or len(cur) == 3 or w['w'][-1] in '.,?!' or nxt['seg'] != w['seg']
+            if (nxt is None or len(cur) == cap.get('max_words', 3) or w['w'][-1] in '.,?!' or nxt['seg'] != w['seg']
                     or not fits(cur + [nxt])):
                 units.append(cur)
                 cur = []
@@ -182,7 +184,16 @@ def main(plan_path, out_ass=None):
                 if bb <= a:
                     continue
                 plain = ' '.join(show(x) if k <= j else hide(x) for k, x in enumerate(u))
-                if style == 'viral':
+                if style == 'cinema':
+                    afont = cap.get('accent_font', 'Fraunces')
+                    abig = int(big * cap.get('accent_scale', 1.14))
+
+                    def cw(k, x, ghost=False):
+                        t = hide(x) if k > j else show(x)
+                        return f'{{\\fn{afont}\\i1\\fs{abig}}}{t}{{\\fn{family}\\i0\\fs{big}}}' if x['gold'] else t
+                    plain = ' '.join(cw(k, x) for k, x in enumerate(u))
+                    body = plain
+                elif style == 'viral':
                     def vw(k, x):
                         if k > j:
                             return hide(x)
@@ -199,6 +210,8 @@ def main(plan_path, out_ass=None):
                        if j == 0 else f'\\fs{big}')
                 if style == 'viral':
                     pop = '\\bord7\\3c&H000000&' + pop
+                if style == 'cinema':
+                    pop = (f'\\fs{big}\\fscx93\\fscy93\\t(0,180,\\fscx100\\fscy100)\\fad(140,0)' if j == 0 else f'\\fs{big}')
                 emit(a, bb, W // 2, base, plain, body, pop)
         lines = units
     else:
