@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Transcribe one video or several takes, with word-level timing (faster-whisper: free, runs on your computer).
 
-usage: transcribe.py <media> [<media> ...] --project NAME [--model small.en] [--language en]
+usage: transcribe.py <media> [<media> ...] --project NAME [--model small.en] [--language en] [--raw]
 
 Every file becomes a TAKE: V1, V2, V3 … in the order given (re-running adds new files as the next take numbers).
+Every take is CLEANED first (noise and background sound removed, voice levelled: tools/cleantake.py), and the clean
+copy in projects/NAME/takes/ is what every later tool cuts from. The original is never touched. --raw skips this.
 Writes into projects/NAME/transcript/:
   transcript.txt       ALL takes in one file, each under a "VIDEO n" heading, every line timecoded.
                        Upload THIS file to ChatGPT.
@@ -64,6 +66,7 @@ def main():
     ap.add_argument('--project')
     ap.add_argument('--model')
     ap.add_argument('--language')
+    ap.add_argument('--raw', action='store_true', help='skip the audio clean-up (already-clean studio audio)')
     a = ap.parse_args()
     files = [Path(m).resolve() for m in a.media]
     for f in files:
@@ -80,15 +83,32 @@ def main():
     tdir.mkdir(parents=True, exist_ok=True)
     takes_f = project / 'takes.json'
     takes = json.loads(takes_f.read_text()) if takes_f.exists() else {}
-    known = {v['file']: k for k, v in takes.items()}
+    known = {}
+    for k, v in takes.items():
+        known[v['file']] = k
+        known[v.get('original', v['file'])] = k
+    acfg = {}
+    try:
+        acfg = brand().get('audio', {})
+    except SystemExit:
+        pass
+    do_clean = not a.raw and acfg.get('clean', True)
 
     from faster_whisper import WhisperModel
     model = None
-    for f in files:
-        if str(f) in known and (tdir / known[str(f)] / 'words.json').exists():
-            print(f'{known[str(f)]} {f.name}: already transcribed')
+    for orig in files:
+        f = orig
+        if str(orig) in known and (tdir / known[str(orig)] / 'words.json').exists():
+            print(f'{known[str(orig)]} {orig.name}: already transcribed')
             continue
-        tid = known.get(str(f)) or f'V{len(takes) + 1}'
+        if do_clean:
+            f = project / 'takes' / f'{orig.stem}-clean{orig.suffix}'
+            if not f.exists() or f.stat().st_mtime < orig.stat().st_mtime:
+                print(f'{orig.name}: removing noise and background sound …')
+                import cleantake
+                before, after = cleantake.clean(orig, f, atten=acfg.get('atten'), target=acfg.get('take_lufs', -16.0))
+                print('  ' + cleantake.fmt('before', before) + '\n  ' + cleantake.fmt('after', after))
+        tid = known.get(str(orig)) or f'V{len(takes) + 1}'
         info = probe(f)
         print(f'{tid} {f.name} ({fmt(info["duration"], ms=False)}) with {model_name} '
               f'(the first run downloads the model) …')
@@ -102,7 +122,7 @@ def main():
         (tdir / tid / 'transcript.srt').write_text('\n'.join(
             f'{i + 1}\n{srt_time(ln[0]["s"])} --> {srt_time(ln[-1]["e"])}\n' + ' '.join(w['w'] for w in ln) + '\n'
             for i, ln in enumerate(sentences(words))))
-        takes[tid] = {'file': str(f), 'name': f.name, 'duration': round(info['duration'], 2),
+        takes[tid] = {'file': str(f), 'name': orig.name, 'original': str(orig), 'duration': round(info['duration'], 2),
                       'width': info['width'], 'height': info['height']}
         takes_f.write_text(json.dumps(takes, indent=1))
 

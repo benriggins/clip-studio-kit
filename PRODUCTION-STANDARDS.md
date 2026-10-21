@@ -85,6 +85,13 @@ say on how each rule is applied.
   bloats the file).
 - Sync slide beats to the voice's own word timestamps, not to estimates.
 
+## 7b. Audio (every brand, standing rule 2026-10-21)
+- **Every take is cleaned before anything else.** Noise and background sound are removed on ingest
+  (`transcribe.py` → `cleantake.py`), so the user never has to ask. Phone audio is typically −23 to −26 LUFS with a
+  −45 dB noise floor and a haze under every word; the clean take lands at about −16 LUFS with the floor near −67 dB.
+- Cut, caption and render from the clean take only. Raw camera audio is never used.
+- Phrase-level dips (the speaker turning or leaning back) are a separate fix; measure with `ebur128=S`, not per word.
+
 ## 8. Delivery
 - QC every export: loudness, true peak, black frames, contact sheet, one frame per shot.
 - Deliver the finished MP4, the alternate music bed, and the posting copy (post plus first comment) together, with

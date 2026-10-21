@@ -71,7 +71,7 @@ Notes:
   2. Tell them they'll type their password (it won't show while they type), then press Enter when asked.
   3. When it finishes, re-run the install script.
 - Everything installed is free: ffmpeg (video), uv + Python 3.12 (tools), faster-whisper (transcription, runs
-  locally), OpenCV (face framing), Node.js + HyperFrames + GSAP (animations), Google Fonts.
+  locally), DeepFilterNet (voice clean-up; a 27 MB binary that `cleantake.py` downloads on first use), OpenCV (face framing), Node.js + HyperFrames + GSAP (animations), Google Fonts.
 - When the script finishes, run `tools/doctor.py`. Fix any ✗ line yourself before moving on.
 
 Disk space: about 2–3 GB, including the transcription model. A recent Mac or PC is fine; no GPU needed.
@@ -158,6 +158,15 @@ project.
     otherwise.
   - More takes later? Run it again with the new files: they become V3, V4… and the combined transcript is rebuilt.
 - About 4–10× faster than real time on a recent laptop. Run it in the background for anything over 10 minutes.
+- **Audio is cleaned automatically, always (standing rule, 2026-10-21).** Before transcribing, `transcribe.py` runs
+  `tools/cleantake.py` on every take: DeepFilterNet removes noise and background sound (room wash, hum, hiss, distant
+  voices), then voice EQ, gentle levelling and a loudness set to −16 LUFS. The clean copy lands in
+  `projects/<name>/takes/<name>-clean.<ext>` and `takes.json` points at it, so planning, cutting, verifying and
+  rendering all use clean audio without anyone asking. The original is never touched (it is saved as `original`).
+  `--raw` skips it, and `brand.json audio.clean: false` turns it off for a brand. Tell the user the before/after
+  numbers (noise floor, loudness) in one line, and for a new voice or room send a 40-second A/B so they can hear it.
+  If a recording still has background voices or music after this, say so, and try `cleantake.py --atten` lower or
+  higher, or a stronger separation model, before delivering.
 
 ### 4.2 Hand off to ChatGPT
 Pick the right prompt from `chatgpt-project/PROMPTS.md` for what they want: clips, assembling takes, long-form,
@@ -325,8 +334,8 @@ These are lessons that already cost time; don't pay for them twice.
 - **Audio:**
   - Every segment gets 12–15 ms fades, so joins don't click.
   - Masters land at −14 LUFS with true peak ≤ −1 dBTP.
-  - If the source audio is noisy or very quiet, tell the user, and try `highpass=f=80,afftdn` in a test render
-    before shipping.
+  - Source audio is cleaned on ingest (§4.1). Never cut from the raw original. If a render still sounds noisy,
+    thin or watery, re-run `cleantake.py` on that take with a different `--atten` and compare before shipping.
 - **Captions:** every line on Shorts, Reels and LinkedIn (most viewers watch muted); key quote lines only on
   long-form unless the user wants all of them. Keep them above the platform's bottom UI band (the defaults do).
 - **Look at it before they do.** Contact sheet, join frames, and one full watch of anything that changed.
@@ -347,7 +356,8 @@ Platform specs:
 | Tool | What it does |
 |---|---|
 | `doctor.py` | checks the install; prints the fix for anything missing |
-| `transcribe.py <files…> --project P` | takes V1, V2…: word timings + one combined `transcript.txt` for ChatGPT |
+| `transcribe.py <files…> --project P [--raw]` | cleans every take's audio first (`cleantake.py`), then takes V1, V2…: word timings + one combined `transcript.txt` for ChatGPT |
+| `cleantake.py <file> [--atten N] [--out f]` | removes noise and background sound, voice EQ, levelling; prints before/after numbers. Run by hand only to test or tune |
 | `plan.py <clip-plan.json> [--only ID]` | ChatGPT's plan → exact cuts (word match + silence snap) + face crops → `<clip>/edit-plan.json` |
 | `frames.py <media> <times…> [--crop x,y,w,h]` | still frames to look at (framing, blinks, graphics) |
 | `render.py <plan> [--draft] [--no-captions]` | cuts, crops, graphics, face cards, captions, whooshes, loudness master |

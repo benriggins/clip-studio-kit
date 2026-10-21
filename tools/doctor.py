@@ -36,6 +36,13 @@ def main():
               'Mac: brew install ffmpeg-full · Windows: winget install Gyan.FFmpeg · Linux: apt install ffmpeg')
     except SystemExit:
         check('ffmpeg', False, 'run the setup script')
+    try:
+        from cleantake import dfn_path
+        check('noise + background remover (DeepFilterNet)', subprocess.run(
+            [str(dfn_path()), '--version'], capture_output=True).returncode == 0, 'run tools/cleantake.py once: it downloads it')
+    except SystemExit:
+        check('noise + background remover (DeepFilterNet)', False,
+              'not available for this computer: see tools/cleantake.py for the download')
     npx = shutil.which('npx') or shutil.which('npx.cmd')
     check('Node.js / npx (animations)', npx, 'Mac: brew install node · Windows: winget install OpenJS.NodeJS.LTS')
     check('GSAP for graphics', (ROOT / 'graphics' / 'node_modules' / 'gsap' / 'dist' / 'gsap.min.js').exists(),
