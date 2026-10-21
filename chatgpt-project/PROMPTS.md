@@ -84,6 +84,14 @@ WRITE-UP:
 [paste the write-up here]
 ```
 
+## 11. Transcript or write-up → carousel (mode F)
+Attach `transcript.txt` (or paste a write-up under the prompt).
+```
+Mode F: carousel plan. Turn [the strongest idea in this video / the write-up below] into a [9]-slide [Instagram 4:5] carousel for [Instagram and a LinkedIn document], following 08-CAROUSEL-BLUEPRINT.md and my brand profile.
+Quote me word for word. Run the cover-hook tournament and the storyboard briefly, mark which slides need my images (with a shot list for each), and flag any claim I should check.
+Return the CAROUSEL_PLAN JSON.
+```
+
 ---
 
 **Tips**

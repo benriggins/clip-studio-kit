@@ -129,9 +129,9 @@ Follow `chatgpt-project/SETUP-GUIDE.md`, one step per message, and wait for "don
 2. In the project's **Instructions** box, paste the text in `chatgpt-project/PROJECT-INSTRUCTIONS.txt`. Copy it to
    their clipboard for them: `pbcopy` on Mac, `clip` on Windows.
 3. **Add files** to the project. Open the folder for them (`open chatgpt-project` on Mac, `explorer
-   chatgpt-project` on Windows) and have them drag in these seven files: `01-SOP.md`, `02-CLIP-SELECTION.md`,
+   chatgpt-project` on Windows) and have them drag in these eight files: `01-SOP.md`, `02-CLIP-SELECTION.md`,
    `03-PLATFORM-PLAYBOOK.md`, `04-YOUTUBE-LONG-FORM-PLAYBOOK.md`, `05-OUTPUT-FORMAT.md`, `06-BRAND-PROFILE.md`,
-   `07-VIDEO-BLUEPRINT.md`.
+   `07-VIDEO-BLUEPRINT.md`, `08-CAROUSEL-BLUEPRINT.md`.
 4. Set the model to the strongest reasoning model their plan offers, and keep the same project for every video.
 5. When they confirm, create `chatgpt-project/.done`.
 
@@ -267,6 +267,28 @@ builds a starting `timeline.json`: slow-mo intro → A/B cuts tightening to 1-be
 drop with a flash, punch and hit → a hero push-in. With no `--music` it generates a bed from `brand.json music`.
 Then refine it in `timeline.json` (§4.6 step 4) and render. Saved favourites go in `my-studio/templates/`.
 
+### 4.8 Carousels (`tools/carousel.py`): Instagram 4:5, LinkedIn documents, 1:1, 9:16
+The Carousel Studio lives in the same kit and reads the same `brand.json`, so a carousel looks like the brand's videos.
+Use it whenever the user says "carousel", "document post" or "swipe post", or after a video when the same idea should
+also be a carousel. **Claude Code has the final say on every slide.**
+1. **Source.** A video project's transcript (`projects/<p>/transcript/`) or a write-up. Quote verbatim. Claude Code
+   may plan the carousel itself, or hand the user prompt 11 (`chatgpt-project/PROMPTS.md`, mode F, using
+   `08-CAROUSEL-BLUEPRINT.md`) and take back a CAROUSEL_PLAN JSON. Check every quote against `words.json` and every
+   number against the source. Never add facts. Personal results stay labelled as the speaker's own.
+2. `tools/carousel.py new <project> <slug> [--format 4:5]`, then write `carousel.json` (recipes: `carousel.py list`).
+   5 to 10 slides, never padded, one claim each, slide 2 stands alone, last slide one action.
+3. **Images come from the user** (they generate or find them; Claude Code never generates carousel images).
+   `carousel.py shotlist <project>/<slug>` writes `SHOT-LIST.md`: send it, stop, wait for "images in", then check
+   every file (width at least the canvas width, framing, brand fit) and say exactly why if one won't work. Stills
+   from the user's own video are fine: `carousel.py grab <project> V1 <seconds> <slug> <name>` (pick a frame where
+   they look at the camera; mid-word and mid-blink frames look bad). Type-only and drawn slides can be built meanwhile.
+4. `tools/carousel.py build <project>/<slug>` writes `out/01.jpg…`, `carousel.pdf` (the LinkedIn document),
+   `contact-sheet.jpg`, `ALT.md` and `QA.md`. It fails on text that overflows, low contrast and images that are too
+   small. Look at the contact sheet and every slide at phone size, then fix and rebuild.
+5. **Deliver** `out/`, the caption and the alt text. Never post for the user. Instagram can't link, so end on
+   "link in bio". Brand-specific cinematic recipes (word behind the subject, film slate and so on) go in
+   `my-studio/templates/`, like the video slide packs.
+
 ---
 
 ## 5. Explainers (animated graphics)
@@ -347,7 +369,7 @@ Platform specs:
 | Reels / Shorts / TikTok | 9:16, 1080×1920 | 30–60 s |
 | LinkedIn | 16:9, 1920×1080 (or 9:16 vertical) | 60–105 s |
 | YouTube long-form | 16:9 | whatever delivers the promise |
-| Instagram feed | 4:5, 1080×1350 | |
+| Instagram feed / carousel | 4:5, 1080×1350 | 5–10 slides |
 
 ---
 
@@ -364,6 +386,7 @@ Platform specs:
 | `verify.py <plan>` | re-transcribes every join: clipped, leaked or doubled words |
 | `captions.py <plan>` | word-timed captions in the brand font, with accent colour |
 | `explainer.py list/new/check/render/brand` | animated explainers on the brand (HyperFrames): templates, feels, `--split` |
+| `carousel.py list/new/grab/shotlist/build` | Carousel Studio (§4.8): brand-driven slides → JPGs, LinkedIn PDF, contact sheet, QA, alt text |
 | `qc.py <video> [plan]` | loudness, true peak, black frames, contact sheet, join frames |
 | `fetch_fonts.py` | downloads the brand's Google Fonts |
 | `stylelab.py looks` | gallery of slide templates, feels and caption styles in their brand → `my-studio/stylelab/gallery.html` |

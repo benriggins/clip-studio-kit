@@ -43,6 +43,11 @@ def main():
     except SystemExit:
         check('noise + background remover (DeepFilterNet)', False,
               'not available for this computer: see tools/cleantake.py for the download')
+    try:
+        from carousel import chrome
+        check(f'Chrome for carousel slides ({chrome()})', True)
+    except SystemExit:
+        check('Chrome for carousel slides', False, 'install Google Chrome (free): https://www.google.com/chrome')
     npx = shutil.which('npx') or shutil.which('npx.cmd')
     check('Node.js / npx (animations)', npx, 'Mac: brew install node · Windows: winget install OpenJS.NodeJS.LTS')
     check('GSAP for graphics', (ROOT / 'graphics' / 'node_modules' / 'gsap' / 'dist' / 'gsap.min.js').exists(),

@@ -12,7 +12,7 @@ Open the project → **Instructions** (sometimes under the project's ⋯ menu or
 already copied the text to your clipboard. It's the contents of `PROJECT-INSTRUCTIONS.txt`. Save.
 
 ### Step 3: add the seven files
-Click **Add files** (or drag them in). Claude Code opens this folder for you. Add all seven:
+Click **Add files** (or drag them in). Claude Code opens this folder for you. Add all eight:
 
 | File | What it teaches ChatGPT |
 |---|---|
@@ -23,6 +23,7 @@ Click **Add files** (or drag them in). Claude Code opens this folder for you. Ad
 | `05-OUTPUT-FORMAT.md` | the exact JSON Claude Code reads |
 | `06-BRAND-PROFILE.md` | you: audience, voice, offer, editing style |
 | `07-VIDEO-BLUEPRINT.md` | turning a write-up into a full video blueprint, with Grok Imagine prompts |
+| `08-CAROUSEL-BLUEPRINT.md` | turning a transcript or write-up into a carousel plan (slides, hooks, image shot list) |
 
 ### Step 4: pick the model
 Choose the **strongest reasoning model** your plan offers (a "Thinking" model) for planning edits. It reads

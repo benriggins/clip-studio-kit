@@ -99,6 +99,15 @@ say on how each rule is applied.
   posting.
 - Files bigger than about 30 MB can't be previewed on a phone, so say so.
 
+## 8b. Carousels (every brand)
+- Real words only, verbatim quotes, every number traceable. Personal results are labelled as the speaker's own.
+- The user supplies every image; Claude Code writes the shot list and does everything else. Images are for emotion,
+  metaphor and real proof; drawn slides are for mechanisms and numbers. Never a photo behind a diagram.
+- 5 to 10 slides, never padded. Slide 2 stands alone. Last slide is one action. Mix dark and light slides.
+- Masthead is the page count only (no name on top). Alt text on every slide. No emojis on art. Don't promote a
+  resource that doesn't exist yet.
+- Faces sit centred in their frame; use a frame where the speaker looks at the camera, never mid-blink.
+
 ## 9. When the user gives new feedback
 Decide whether it's about **this brand** (put it in `my-studio/MY-STYLE.md` and `brand.json`) or about **taste
 in general** (put it here, in the kit, so every future company gets it). Most "I hate X" feedback is general.
