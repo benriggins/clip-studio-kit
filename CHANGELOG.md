@@ -1,6 +1,9 @@
 # What's new in Clip Studio
 
 ## 2026-10-22: cinematic carousels and video carousels
+- Carousels learn what Instagram rewards: a sixth framework ("steal this" cheat sheets, built to be saved), slide 2
+  written as a second hook, a last slide that asks for a comment keyword, share or save, and a reminder to add a
+  trending sound in the app so the carousel can reach the Reels tab.
 - FYP / Explore carousels: 3:4 tall format by default, a profile-grid safe-zone check, five frameworks (stats &
   proof, contrarian, tutorial, problem + fix, before / after) and seven new looks: Notes app, hot take, analytics
   proof card, scrapbook with taped polaroids and a stamp, pop-up collage, blur-to-sharp reveal, seamless panorama.

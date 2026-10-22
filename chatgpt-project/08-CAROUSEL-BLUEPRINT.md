@@ -73,6 +73,18 @@ mechanisms and numbers. Never put a photo behind a diagram. If an image adds not
 | **Tutorial / steps** | 1 the outcome + "save this" · 2-6 one step per slide (or `steps`) · 7 the mistake to avoid · 8 CTA | `notes`, `steps`, `scrapbook` |
 | **Problem + fix** | 1 the sharpest pain (their words) · 2 why it happens · 3 `reveal` the fix · 4 the fix sharp · 5 proof · 6 CTA | `scrapbook`, `chat`, `notif`, `reveal` |
 | **Before / after** | 1-2 `pano` before → after across the swipe · 3 what changed · 4 `compare` old way / new way · 5 CTA | `pano`, `split`, `collage`, `compare` |
+| **Steal this / cheat sheet** | 1 "Steal this:" + the outcome · 2-N one template, checklist or script per slide, complete enough to use without you · last: save + share | `notes`, `paper`, `steps`, `receipt` |
+
+What the algorithm rewards (research, 2026-10-22): swipe-through, time on post, saves and shares.
+- **Slide 2 is a second hook.** Instagram shows slide 2 to people who scrolled past slide 1, so it must hook alone,
+  never "continued from slide 1".
+- **The last slide asks for one interaction:** comment a keyword ("Comment SYSTEM and I'll send it"), share to a
+  story, or save. A comment keyword beats "DM me" because the comment itself counts.
+- **Save bait wins reach.** Cheat sheets, templates, checklists and step-by-steps get saved; say "save this" on slide 1.
+- **Audio:** tell the user to add a trending sound in the Instagram app before posting; a carousel with audio can
+  also appear in the Reels tab. (Music can't be added through the API, only in the app.)
+- **Length:** up to 20 slides is allowed. Stay at 5 to 10 unless every extra slide is a usable step or template.
+- **Hybrid:** mix video slides with stills (motion on the opener and the reveal); it lifts completion.
 
 Looks: Notes app (`notes`), scrapbook / photo stamps (`scrapbook`), pop-up collage (`collage`), curiosity
 (`reveal`, `pano`, a sentence that finishes on the next slide), plus the cinematic set below.

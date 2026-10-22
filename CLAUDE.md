@@ -308,8 +308,11 @@ also be a carousel. **Claude Code has the final say on every slide.**
    slides into one 9:16 Reel for the Reels tab / For You feed. Recipes `bigword`, `slate`, `callout`, `monument`,
    `scoreboard` are the cinematic set; `chat`, `notif`, `receipt`, `knockout`, `split`, `lowerthird` are the other
    openers; `notes`, `hottake`, `proof`, `scrapbook`, `collage`, `reveal`, `pano` are the FYP/Explore looks.
-   New carousels default to **3:4 (1080x1440)**. Build on one of the five frameworks in 08 §3a (stats & proof,
-   contrarian, tutorial, problem + fix, before / after), with new images and a new concept every time.
+   New carousels default to **3:4 (1080x1440)**. Build on one of the six frameworks in 08 §3a (stats & proof,
+   contrarian, tutorial, problem + fix, before / after, steal this / cheat sheet), with new images and a new
+   concept every time. Slide 2 is a second hook (Instagram re-shows it to people who scrolled past slide 1); the
+   last slide asks for one interaction (comment a keyword, share, or save); remind the user to add a trending sound
+   in the app so the carousel can reach the Reels tab.
    **Never ship the same look twice in a row:** rotate the opener and give each slide a `motion` style
    (`push`, `whip`, `type`, `rack`, `cinemagraph`; `--style` forces one). `cinemagraph` slides need
    `carousel.py generate <project>/<slug> --clips` first (Grok animates the photo, ~$0.11 a slide). The Style Lab
@@ -398,7 +401,7 @@ Platform specs:
 | Reels / Shorts / TikTok | 9:16, 1080×1920 | 30–60 s |
 | LinkedIn | 16:9, 1920×1080 (or 9:16 vertical) | 60–105 s |
 | YouTube long-form | 16:9 | whatever delivers the promise |
-| Instagram feed / carousel | 4:5, 1080×1350 | 5–10 slides |
+| Instagram feed / carousel | 3:4, 1080×1440 (4:5 for cross-posting) | 5–10 slides (20 max) |
 
 ---
 
