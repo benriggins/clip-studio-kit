@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parent.parent          # the kit folder
 STUDIO = ROOT / 'my-studio'                     # the user's own brand, style and SOPs (their own git repo)
 BRAND_FILE = STUDIO / 'brand.json'
 FONTS = ROOT / 'fonts'
-CANVAS = {'9:16': (1080, 1920), '16:9': (1920, 1080), '1:1': (1080, 1080), '4:5': (1080, 1350)}
+CANVAS = {'9:16': (1080, 1920), '16:9': (1920, 1080), '1:1': (1080, 1080), '4:5': (1080, 1350), '3:4': (1080, 1440)}
 
 
 def die(msg, code=1):

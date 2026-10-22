@@ -1,6 +1,9 @@
 # What's new in Clip Studio
 
 ## 2026-10-22: cinematic carousels and video carousels
+- FYP / Explore carousels: 3:4 tall format by default, a profile-grid safe-zone check, five frameworks (stats &
+  proof, contrarian, tutorial, problem + fix, before / after) and seven new looks: Notes app, hot take, analytics
+  proof card, scrapbook with taped polaroids and a stamp, pop-up collage, blur-to-sharp reveal, seamless panorama.
 - Six new carousel openers so no two posts look the same: text thread, lock-screen notifications, receipt, photo
   inside the word, before/after split, live lower third with a ticker.
 - Five video-slide styles: push, whip (fast), type (messages pop in, the headline types on), rack focus, and

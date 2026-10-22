@@ -23,11 +23,11 @@ from _common import ROOT, ffmpeg  # noqa: E402
 HF = 'hyperframes@0.8.34'
 FF = ffmpeg()
 
-BIG = '.bw__big, .mon span, .sl__big, .num, .ko__w, .lock__t'
-TEXT = '.big, .cover, .bw__c, .sl__c, .ko__l, .lt__h'
-POPS = '.msg, .ntf'
+BIG = '.bw__big, .mon span, .sl__big, .num, .ko__w, .lock__t, .pf__v, .pn__tag'
+TEXT = '.big, .cover, .bw__c, .sl__c, .ko__l, .lt__h, .cl__h, .nt__title'
+POPS = '.msg, .ntf, .nt__l'
 ITEMS = ('.k, .bw__a, .bw__c, .bw__s, .sl__a, .sl__c, .imgtop > *, .imgbot > *, .pad > *, .tc, .board, .callout, .sheet, .ch__h, '
-         '.lock__d, .rc, .sp__seam, .sp__l, .sp__s, .lt__bug, .lt__p, .lt__s, .lt__tk, .msg, .ntf')
+         '.lock__d, .rc, .sp__seam, .sp__l, .sp__s, .lt__bug, .lt__p, .lt__s, .lt__tk, .msg, .ntf, .nt__date, .sb__t > *, .cl__t > *, .rv, .pf__card')
 PHOTO = "['.bg:not(.bg--blur)', '.cut', '.sp']"
 
 # Every style shares the head (selectors, items never animated twice) and the tail (scrubber, REC blink, registration).
@@ -45,6 +45,13 @@ tl.fromTo('.scrub__bar i', { width: '0%' }, { width: '100%', duration: D * .7, e
 tl.fromTo('.scrub__bar b', { right: '100%' }, { right: '-10px', duration: D * .7, ease: 'power1.inOut' }, .6);
 tl.from('.rec', { opacity: 0, repeat: Math.floor(D), yoyo: true, duration: .5, ease: 'steps(1)' }, 0);
 tl.fromTo('.lt__tk span', { x: 0 }, { x: -700, duration: D, ease: 'none' }, 0);
+tl.from('.pf__bar i', { scaleY: 0, transformOrigin: '50% 100%', duration: .8, stagger: .14, ease: 'power3.out' }, .7);
+tl.from('.pol', { y: -140, rotation: '+=10', opacity: 0, duration: .55, stagger: .22, ease: 'back.out(1.6)' }, .15);
+tl.from('.sb__stamp', { scale: 2.4, opacity: 0, duration: .3, ease: 'power4.in' }, 1.1);
+tl.from('.sb__note', { y: 60, rotation: 12, opacity: 0, duration: .5, ease: 'back.out(2)' }, 1.4);
+tl.from('.cl__l', { y: 160, scale: .7, opacity: 0, duration: .6, stagger: .12, ease: 'back.out(1.8)' }, .1);
+tl.to('.cl__l', { y: '-=14', duration: D / 2, yoyo: true, repeat: 1, ease: 'sine.inOut', stagger: .3 }, .8);
+tl.fromTo('.rv__h span', { x: 0 }, { x: 14, duration: .45, repeat: Math.floor(D / .45), yoyo: true, ease: 'sine.inOut' }, 0);
 tl.set({}, {}, D);
 window.__timelines = window.__timelines || {}; window.__timelines['__NAME__'] = tl;
 """
@@ -67,12 +74,16 @@ tl.from(items, { x: 180, opacity: 0, duration: .34, stagger: .06, ease: 'expo.ou
     # messages and notifications arrive one by one, then the headline types itself on
     'type': """
 tl.fromTo(A(__PHOTO__), { scale: 1.08 }, { scale: 1.0, duration: D, ease: 'none' }, 0);
-pops.forEach((e, i) => tl.from(e, { y: 36, scale: .86, opacity: 0, duration: .32, ease: 'back.out(2.2)',
-  transformOrigin: e.classList.contains('msg--me') ? '100% 100%' : '0% 100%' }, .3 + i * .5));
-let at = .4 + pops.length * .5;
+// text that sits above the messages / list types first, then the items pop in, then the rest types on
+let at = .3;
 const typed = A('__TEXT__, __BIG__').filter(e => !pops.some(p => p.contains(e)));
-typed.forEach(e => { const n = Math.max(6, Math.min(36, e.textContent.trim().length)), d = n * .032;
-  tl.fromTo(e, { clipPath: 'inset(-30% 100% -30% 0%)' }, { clipPath: 'inset(-30% 0% -30% 0%)', duration: d, ease: 'steps(' + n + ')' }, at); at += d * .7; });
+const typeIt = e => { const n = Math.max(6, Math.min(36, e.textContent.trim().length)), d = n * .032;
+  tl.fromTo(e, { clipPath: 'inset(-30% 100% -30% 0%)' }, { clipPath: 'inset(-30% 0% -30% 0%)', duration: d, ease: 'steps(' + n + ')' }, at); at += d * .8; };
+const first = typed.filter(e => pops.length && (e.compareDocumentPosition(pops[0]) & Node.DOCUMENT_POSITION_FOLLOWING));
+first.forEach(typeIt);
+pops.forEach(e => { tl.from(e, { y: 36, scale: .86, opacity: 0, duration: .32, ease: 'back.out(2.2)',
+  transformOrigin: e.classList.contains('msg--me') ? '100% 100%' : '0% 100%' }, at); at += .45; });
+typed.filter(e => !first.includes(e)).forEach(typeIt);
 tl.from(items.filter(e => !typed.some(t => e === t || e.contains(t))), { opacity: 0, y: 24, duration: .4, stagger: .1, ease: 'power2.out' }, .2);
 """,
     # rack focus: the photo pulls from soft to sharp, then the type settles in
@@ -118,17 +129,30 @@ def clip_path(d, sl):
     return d / Path(sl['image']).with_name(Path(sl['image']).stem + '-clip.mp4')
 
 
+def shots(node):
+    """Every (image, shot) pair in a slide: the slide's own, photos[], layers[], pano."""
+    if isinstance(node, dict):
+        if node.get('image') and isinstance(node.get('shot'), dict):
+            yield node['image'], node['shot']
+        for v in node.values():
+            if isinstance(v, (dict, list)):
+                yield from shots(v)
+    elif isinstance(node, list):
+        for v in node:
+            yield from shots(v)
+
+
 def generate(d, car, kie, clips=False):
     made = 0
-    for i, sl in enumerate(car['slides'], 1):
-        shot, img = sl.get('shot') or {}, sl.get('image')
-        if not img or (d / img).exists() or not shot.get('prompt'):
+    for i, img, shot in [(i, img, shot) for i, sl in enumerate(car['slides'], 1) for img, shot in shots(sl)]:
+        if (d / img).exists() or not shot.get('prompt'):
             continue
         (d / img).parent.mkdir(parents=True, exist_ok=True)
-        for aspect in ('3:4', '2:3'):   # GPT Image 2.5 has no 4:5; 3:4 crops cleanly
+        for aspect in ([shot['aspect']] if shot.get('aspect') else ['3:4', '2:3']):   # GPT Image 2.5 has no 4:5
             try:
-                kie.image(shot['prompt'], str(d / img), aspect=aspect)
-                fit_width(d / img, 1080)
+                kie.image(shot['prompt'], str(d / img), aspect=aspect, transparent=bool(shot.get('transparent')), res=shot.get('res', '1K'))
+                if not shot.get('transparent'):
+                    fit_width(d / img, 1080)
                 made += 1
                 print(f'  slide {i}: {img} ({aspect})')
                 break

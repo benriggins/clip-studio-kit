@@ -116,7 +116,8 @@ to 3 seconds. One JSON block, then stop.
 ## 13. Cinematic carousel + video carousel (the default carousel)
 Attach `transcript.txt` (or paste a write-up), then paste:
 ```
-Plan a cinematic carousel from this, per 08-CAROUSEL-BLUEPRINT.md section 3b: 6 to 9 slides, the opener that fits
+Plan an FYP carousel from this, per 08-CAROUSEL-BLUEPRINT.md sections 3a and 3b: pick the framework and the look
+that fit this idea (different from our last carousels; say why), 3:4 format, 5 to 10 slides, the opener that fits
 this hook best (not the one we used last time; name a second option), a motion style on every slide, image slides mixed with drawn slides, verbatim quotes only, one action at the end (from the brand profile).
 Give every image slide a shot with a GPT Image 2.5 prompt (realism plan first, portrait 4:5, no text). Copy must
 read in under 2.5 seconds a slide, because it also ships as video slides and a 9:16 Reel. Return the CAROUSEL_PLAN

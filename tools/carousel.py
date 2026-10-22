@@ -44,6 +44,13 @@ RECIPES = {
     'knockout': 'kicker, word, line, sub, image, pos  . OPENER: one giant word with the photo showing through the letters.',
     'split': 'image, pos, image2, pos2, label, label2, headline, sub  . OPENER: before/after diptych, the headline on a paper strip across the seam.',
     'lowerthird': 'image, pos, bug, place, timecode, headline, sub, ticker, ticker_label  . OPENER: a live-broadcast lower third with a crawling ticker.',
+    'notes': 'title, date, lines ("[x] done", "[ ] todo", "- bullet", "# heading", plain; ~~strike~~ ==highlight==), dark  . FYP: a Notes-app screenshot, text-heavy, made to be read and saved.',
+    'hottake': 'kicker, myth, truth, sub, [theme]  . FYP contrarian: the common belief struck through in red, your take big under it.',
+    'proof': 'kicker, headline, label, value, delta, delta_bad, bars[{label,value,show,on}], source  . FYP stats & proof: an analytics card. Real numbers only; source is required.',
+    'scrapbook': 'photos[{image,caption,pos}] (1-3), stamp [big, small], note, kicker, headline  . FYP tactile: taped polaroids on kraft paper, a rubber stamp, a sticky note.',
+    'collage': 'bg gold|paper|royal, layers[{image (transparent PNG), x, y, w, rot, front}], kicker, headline, sub  . FYP pop-up collage: cut-out objects in front of and behind giant type.',
+    'reveal': 'image, pos, kicker, question, hint  . FYP curiosity hook: the photo blurred out under a question; the next slide shows it sharp.',
+    'pano': 'pano{image, index, of, y}, tag, kicker, headline, sub, position  . FYP seamless: one wide photo runs across consecutive slides, so the swipe continues the picture.',
 }
 GRAIN = ("url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E"
          "%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' seed='9'/%3E%3CfeColorMatrix values='0 0 0 0 .5 "
@@ -443,6 +450,182 @@ def r_lowerthird(c, sl):
             f'<div class="slate__tc">{tc(sl)}</div><div class="lt">{bug}<div class="lt__p">{big}</div>{sub}</div>{tick}'), 'dark img'
 
 
+# ---------- FYP / Explore aesthetics ----------
+def nrich(s):
+    s = rich(s)
+    s = re.sub(r'~~(.+?)~~', r'<s>\1</s>', s)
+    return re.sub(r'==(.+?)==', r'<mark>\1</mark>', s)
+
+
+def r_notes(c, sl):
+    rows = ''
+    for ln in sl['lines']:
+        if ln.startswith(('[x] ', '[ ] ')):
+            on = ln.startswith('[x]')
+            rows += f'<p class="nt__l nt__ck{" nt__ck--on" if on else ""}"><i></i><span>{nrich(ln[4:])}</span></p>'
+        elif ln.startswith('- '):
+            rows += f'<p class="nt__l nt__b"><span>{nrich(ln[2:])}</span></p>'
+        elif ln.startswith('# '):
+            rows += f'<p class="nt__l nt__h">{nrich(ln[2:])}</p>'
+        else:
+            rows += f'<p class="nt__l">{nrich(ln)}</p>'
+    dark = sl.get('dark')
+    return (f'<div class="nt{" nt--dark" if dark else ""}"><div class="nt__bar"><span>‹ Notes</span><span>⌁ &nbsp;⋯</span></div>'
+            f'<p class="nt__date">{html.escape(sl.get("date", "October 22, 2026 at 9:41 AM"))}</p>'
+            f'<p class="nt__title">{nrich(sl["title"])}</p>{rows}</div>'), ('dark img' if dark else 'light img')
+
+
+def r_hottake(c, sl):
+    k = f'<p class="ht__k">{rich(sl.get("kicker", "Unpopular opinion"))}</p>'
+    myth = f'<p class="ht__m">{rich(sl["myth"])}</p>'
+    truth = h(sl['truth'], c.disp, c.inner, c.H * .36, 130, 64, 'ht__t big', 1.02)
+    sub = f'<p class="sub">{rich(sl["sub"])}</p>' if sl.get('sub') else ''
+    return f'<div class="pad pad--c">{k}{myth}{truth}{sub}</div>', sl.get('theme', 'light')
+
+
+def r_proof(c, sl):
+    bars = sl.get('bars', [])
+    top = max((float(b['value']) for b in bars), default=1) or 1
+    cols = ''.join(f'<div class="pf__bar{" pf__bar--on" if b.get("on") else ""}"><b>{html.escape(str(b.get("show", b["value"])))}</b>'
+                   f'<i style="height:{max(4, float(b["value"]) / top * 100):.1f}%"></i><span>{html.escape(b["label"])}</span></div>' for b in bars)
+    delta = sl.get('delta')
+    pill = f'<span class="pf__d{" pf__d--bad" if sl.get("delta_bad") else ""}">{html.escape(delta)}</span>' if delta else ''
+    card = (f'<div class="pf__card"><p class="pf__lab">{html.escape(sl.get("label", ""))}{pill}</p>'
+            f'<p class="pf__v">{html.escape(str(sl.get("value", "")))}</p><div class="pf__chart">{cols}</div>'
+            f'<p class="pf__src">{rich(sl.get("source", ""))}</p></div>')
+    return f'<div class="pad pad--c">{heading(c, sl, 84, 50, .18)}{card}</div>', sl.get('theme', 'dark')
+
+
+SB_SPOTS = {1: [(12, 7, 780, -3)], 2: [(6, 7, 560, -6), (44, 19, 520, 5)], 3: [(3, 13, 440, -8), (31, 21, 440, 3), (56, 11, 430, 8)]}
+
+
+def r_scrapbook(c, sl):
+    photos = sl.get('photos', [])[:3]
+    pols = ''
+    for n, ((x, y, w, rot), p) in enumerate(zip(SB_SPOTS.get(len(photos), []), photos)):
+        cap = f'<p>{rich(p["caption"])}</p>' if p.get('caption') else ''
+        pols += (f'<div class="pol" style="left:{x}%;top:{y}%;width:{w}px;transform:rotate({rot}deg);z-index:{5 - n}"><span class="tape"></span>'
+                 f'<div class="pol__i" style="background-image:url({c.img(p["image"])});background-position:{p.get("pos", "center")}"></div>{cap}</div>')
+    st = sl.get('stamp')
+    stamp = ''
+    if st:
+        a, b = (st if isinstance(st, list) else [st, ''])[:2]
+        stamp = f'<div class="sb__stamp"><b>{html.escape(a)}</b><span>{html.escape(b)}</span></div>'
+    note = f'<div class="sb__note">{rich(sl["note"])}</div>' if sl.get('note') else ''
+    k = f'<p class="sb__k">{rich(sl["kicker"])}</p>' if sl.get('kicker') else ''
+    big = h(sl['headline'], c.disp, c.inner - (330 if note else 0), c.H * .2, 104, 56, 'big', 1.02)
+    return (f'<div class="sb"></div>{pols}{stamp}{note}<div class="sb__t{" sb__t--n" if note else ""}">{k}{big}</div>'), 'light'
+
+
+def r_collage(c, sl):
+    lay = ''
+    for L in sl.get('layers', []):
+        z = 5 if L.get('front') else 2
+        lay += (f'<img class="cl__l" src="{c.img(L["image"])}" style="left:{L.get("x", 0)}px;top:{L.get("y", 0)}px;width:{L.get("w", 420)}px;'
+                f'transform:rotate({L.get("rot", 0)}deg);z-index:{z}"/>')
+    k = f'<p class="cl__k">{rich(sl["kicker"])}</p>' if sl.get('kicker') else ''
+    big = h(sl['headline'], c.disp, c.inner, c.H * .4, 170, 80, 'cl__h', .96, 'h1')
+    sub = f'<p class="sub">{rich(sl["sub"])}</p>' if sl.get('sub') else ''
+    bg = sl.get('bg', 'gold')
+    return f'<div class="cl cl--{bg}"></div>{lay}<div class="cl__t">{k}{big}{sub}</div>', ('dark img' if bg == 'royal' else 'light img')
+
+
+def r_reveal(c, sl):
+    q = h(sl['question'], c.disp, c.inner - 120, c.H * .3, 110, 56, 'big', 1.02)
+    return (c.photo(sl, 'bg--blur bg--reveal') + '<div class="tint"></div>'
+            f'<div class="rv"><p class="rv__k">{rich(sl.get("kicker", "Guess"))}</p>{q}'
+            f'<p class="rv__h">{rich(sl.get("hint", "Swipe to see"))}<span>→</span></p></div>'), 'dark img'
+
+
+def pano_layer(c, sl):
+    from PIL import Image as _I
+    p = sl['pano']
+    src = (c.d / p['image']).resolve()
+    if not src.exists():
+        die(f'image missing: {src}')
+    iw, ih = _I.open(src).size
+    of, ix = int(p.get('of', 2)), int(p.get('index', 0))
+    k = max(of * c.W / iw, c.H / ih)
+    bw, bh = iw * k, ih * k
+    x = -(ix * c.W) - (bw - of * c.W) / 2
+    y = -(bh - c.H) * float(p.get('y', .5))
+    return (f'<div class="bg" style="background-image:url({src.as_uri()});background-size:{bw:.0f}px {bh:.0f}px;'
+            f'background-position:{x:.0f}px {y:.0f}px"></div>')
+
+
+def r_pano(c, sl):
+    pos = sl.get('position', 'bottom')
+    tag = f'<p class="pn__tag pn__tag--{pos}">{html.escape(sl["tag"])}</p>' if sl.get('tag') else ''
+    cls = 'imgtop' if pos == 'top' else 'imgbot'
+    return (pano_layer(c, sl) + f'<div class="shade shade--{pos}"></div>{tag}'
+            f'<div class="{cls}">{heading(c, sl, 100, 54, .26)}</div>'), 'dark img'
+
+
+FYP_CSS = """
+.s--light.s--img .top,.s--light.s--img .foot { color:rgba(0,0,0,.42); } .s--light.s--img .fr { border-color:rgba(0,0,0,.08); }
+.nt { position:absolute; inset:0; z-index:1; background:#fff; color:#1c1c1e; padding:150px 80px 0; font-family:system-ui,-apple-system,sans-serif; }
+.nt--dark { background:#1c1c1e; color:#f2f2f7; } .nt ~ .grain, .nt ~ .fr, .nt ~ .top { display:none; }
+.nt__bar { position:absolute; left:56px; right:56px; top:96px; display:flex; justify-content:space-between; font:500 36px/1 system-ui; color:#e0a100; }
+.nt__date { margin:60px 0 0; text-align:center; font:400 28px/1 system-ui; color:#8e8e93; }
+.nt__title { margin:44px 0 34px; font:700 84px/1.08 system-ui; letter-spacing:-.01em; }
+.nt__l { margin:0 0 26px; font:400 50px/1.3 system-ui; } .nt__h { font-weight:700; font-size:58px; margin-top:52px; }
+.nt__b { display:flex; gap:22px; } .nt__b::before { content:"•"; color:#8e8e93; }
+.nt__ck { display:flex; gap:24px; align-items:flex-start; } .nt__ck i { flex:none; width:48px; height:48px; margin-top:9px; border-radius:50%; border:2.5px solid #c7c7cc; }
+.nt__ck--on i { border-color:#e0a100; background:#e0a100 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 12.5l4 4 8-9' fill='none' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") center/70% no-repeat; }
+.nt__ck--on span { color:#8e8e93; }
+.nt mark { background:linear-gradient(180deg,transparent 12%,#ffe066 12%,#ffe066 88%,transparent 88%); color:inherit; padding:0 4px; }
+.nt--dark mark { background:linear-gradient(180deg,transparent 12%,#8a6d00 12%,#8a6d00 88%,transparent 88%); }
+.nt s { text-decoration-color:#e5484d; text-decoration-thickness:4px; color:#8e8e93; } .nt em { font-style:normal; font-weight:700; color:inherit; }
+.s--light .pad .big, .s--light .pad .cover { color:var(--ink); }
+.ht__k { align-self:flex-start; margin:0 0 54px; padding:14px 24px; border-radius:999px; background:var(--ink); color:#fff; font:700 24px/1 var(--sans); letter-spacing:.16em; text-transform:uppercase; }
+.ht__m { margin:0 0 40px; font:500 64px/1.12 var(--serif); letter-spacing:-.02em; color:var(--mut); text-decoration:line-through; text-decoration-color:#d2442f; text-decoration-thickness:10px; text-decoration-skip-ink:none; }
+.s--dark .ht__k { background:var(--ac); color:var(--bgd); }
+.pf__card { margin-top:46px; padding:40px 44px 32px; border-radius:30px; background:#fff; color:#151018; box-shadow:0 40px 90px rgba(0,0,0,.45); font-family:var(--sans); }
+.pf__lab { margin:0; display:flex; justify-content:space-between; align-items:center; font:600 26px/1 var(--sans); color:#6e6878; }
+.pf__d { padding:10px 18px; border-radius:999px; background:#e3f5e8; color:#177a3c; font:700 24px/1 var(--sans); }
+.pf__d--bad { background:#fde8e6; color:#b42318; }
+.pf__v { margin:14px 0 0; font:800 132px/1 var(--sans); letter-spacing:-.04em; font-variant-numeric:tabular-nums; }
+.pf__chart { display:flex; align-items:flex-end; gap:22px; height:360px; margin-top:34px; padding-top:44px; border-bottom:2px solid #e7e3ee; }
+.pf__bar { flex:1; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; position:relative; }
+.pf__bar i { display:block; width:100%; border-radius:12px 12px 0 0; background:#d9d3e4; } .pf__bar--on i { background:var(--ac); }
+.pf__bar b { font:700 26px/1 var(--sans); margin-bottom:12px; color:#3c3546; } .pf__bar--on b { color:#151018; }
+.pf__bar span { position:absolute; bottom:-46px; font:600 22px/1 var(--sans); color:#6e6878; white-space:nowrap; }
+.pf__src { margin:68px 0 0; font:500 20px/1.3 var(--mono); letter-spacing:.06em; color:#8a8494; }
+.sb { position:absolute; inset:0; z-index:0; background:radial-gradient(60% 40% at 30% 20%, rgba(255,255,255,.35), transparent 70%),
+  repeating-linear-gradient(93deg, rgba(120,90,50,.035) 0 2px, transparent 2px 7px), linear-gradient(170deg,#e8dcc4,#d9c8a6); }
+.pol { position:absolute; z-index:2; padding:20px 20px 0; background:#fbfaf6; box-shadow:0 26px 50px rgba(60,40,10,.35), 0 2px 4px rgba(0,0,0,.15); }
+.pol__i { width:100%; aspect-ratio:1; background-size:cover; filter:saturate(.85) contrast(1.05) sepia(.08); }
+.pol p { margin:0; padding:16px 6px 22px; font:italic 400 36px/1.1 var(--serif); color:#2a2420; text-align:center; } .pol p em { color:#b23a2e; }
+.pol:not(:has(p)) { padding-bottom:64px; }
+.tape { position:absolute; left:50%; top:-26px; width:190px; height:54px; margin-left:-95px; transform:rotate(-4deg); z-index:3;
+  background:rgba(236,226,196,.82); box-shadow:0 2px 6px rgba(0,0,0,.12); clip-path:polygon(3% 0,97% 4%,100% 100%,0 96%); }
+.sb__stamp { position:absolute; right:84px; top:55%; z-index:6; width:250px; height:250px; border-radius:50%; border:7px solid #b23a2e;
+  box-shadow:inset 0 0 0 9px rgba(0,0,0,0), inset 0 0 0 12px #b23a2e; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  transform:rotate(-14deg); color:#b23a2e; opacity:.86; mix-blend-mode:multiply; text-align:center; }
+.sb__stamp b { font:800 64px/1 var(--sans); letter-spacing:-.02em; } .sb__stamp span { margin-top:8px; font:700 20px/1.1 var(--mono); letter-spacing:.16em; text-transform:uppercase; }
+.sb__note { position:absolute; right:80px; bottom:150px; z-index:4; width:290px; padding:30px 28px 38px; background:#ffe680; transform:rotate(4deg);
+  box-shadow:0 18px 30px rgba(60,40,10,.3); font:italic 400 38px/1.15 var(--serif); color:#2a2420; } .sb__note em { color:#b23a2e; }
+.sb__t { position:absolute; left:96px; right:96px; bottom:150px; z-index:3; color:#1f1a16; } .sb__t--n { right:420px; }
+.sb__t .big { color:#1f1a16; } .sb__t em { color:#1f1a16; background:linear-gradient(180deg,transparent 58%,rgba(255,214,64,.85) 58%,rgba(255,214,64,.85) 92%,transparent 92%); }
+.sb__k { margin:0 0 18px; font:700 22px/1 var(--mono); letter-spacing:.22em; text-transform:uppercase; color:#8a5a2b; }
+.cl { position:absolute; inset:0; z-index:0; } .cl--gold { background:radial-gradient(70% 50% at 50% 40%, #ead29a, #d4b470 70%, #b8964f); }
+.cl--paper { background:linear-gradient(170deg,var(--paper),var(--paperd)); } .cl--royal { background:radial-gradient(70% 50% at 50% 40%, #4b1e8a, #1c0838); }
+.cl__l { position:absolute; filter:drop-shadow(5px 0 0 #fff) drop-shadow(-5px 0 0 #fff) drop-shadow(0 5px 0 #fff) drop-shadow(0 -5px 0 #fff) drop-shadow(0 34px 34px rgba(30,10,50,.38)); }
+.cl__t { position:absolute; left:96px; right:96px; top:50%; transform:translateY(-50%); z-index:4; text-align:center; }
+.cl__h { color:var(--ink); letter-spacing:-.045em; } .cl__h em { color:#fff; } .cl--royal ~ .cl__t .cl__h { color:#fff; } .cl--royal ~ .cl__t .cl__h em { color:var(--ac); }
+.cl__k { display:inline-block; margin:0 0 30px; padding:14px 22px; background:var(--ink); color:#fff; font:700 24px/1 var(--mono); letter-spacing:.2em; text-transform:uppercase; transform:rotate(-2deg); }
+.cl--paper ~ .cl__t .cl__h em { color:var(--acl); }
+.bg--reveal { filter:blur(46px) saturate(1.2) brightness(.8); transform:scale(1.25); }
+.rv { position:absolute; left:80px; right:80px; top:50%; transform:translateY(-50%); z-index:3; text-align:center; padding:60px 50px;
+  border-radius:40px; background:rgba(255,255,255,.12); border:1.5px solid rgba(255,255,255,.3); backdrop-filter:blur(20px); }
+.rv__k { margin:0 0 26px; font:700 24px/1 var(--mono); letter-spacing:.26em; text-transform:uppercase; color:var(--ac); }
+.rv__h { display:inline-flex; gap:16px; margin:40px 0 0; padding:20px 32px; border-radius:999px; background:#fff; color:var(--bgd); font:700 30px/1 var(--sans); }
+.pn__tag { position:absolute; left:0; right:0; z-index:2; margin:0; text-align:center; font-family:var(--serif); font-size:300px; font-weight:600; line-height:1;
+  letter-spacing:-.05em; color:transparent; -webkit-text-stroke:3px rgba(255,255,255,.9); }
+.pn__tag--bottom { top:150px; } .pn__tag--top { bottom:180px; }
+"""
+
+
 LAB_CSS = """
 .chat { position:absolute; left:96px; right:96px; top:150px; z-index:3; font-family:system-ui,-apple-system,sans-serif; }
 .ch__h { display:flex; align-items:center; gap:18px; padding-bottom:26px; margin-bottom:22px; border-bottom:1px solid rgba(255,255,255,.18); color:#fff; }
@@ -536,7 +719,8 @@ CINEMA_CSS = """
 """
 
 
-R = {'chat': r_chat, 'notif': r_notif, 'receipt': r_receipt, 'knockout': r_knockout, 'split': r_split, 'lowerthird': r_lowerthird,
+R = {'notes': r_notes, 'hottake': r_hottake, 'proof': r_proof, 'scrapbook': r_scrapbook, 'collage': r_collage, 'reveal': r_reveal,
+     'pano': r_pano, 'chat': r_chat, 'notif': r_notif, 'receipt': r_receipt, 'knockout': r_knockout, 'split': r_split, 'lowerthird': r_lowerthird,
      'bigword': r_bigword, 'slate': r_slate, 'callout': r_callout, 'monument': r_monument, 'scoreboard': r_scoreboard, 'cover': r_cover, 'statement': r_statement, 'quote': r_quote, 'list': r_list, 'compare': r_compare, 'steps': r_steps,
      'stat': r_stat, 'photo': r_photo, 'paper': r_paper, 'cta': r_cta}
 
@@ -617,7 +801,7 @@ em {{ font-style:italic; font-weight:400; color:var(--acc); }}
 .btn span {{ font-size:40px; }}
 .url {{ margin:30px 0 0; font:600 26px/1 var(--mono); letter-spacing:.16em; color:var(--acc); }}
 .logo {{ position:absolute; left:96px; bottom:120px; height:56px; z-index:5; }}
-''' + CINEMA_CSS + LAB_CSS
+''' + CINEMA_CSS + LAB_CSS + FYP_CSS
 
 
 def build_html(d, car, b):
@@ -645,6 +829,7 @@ if(q)document.querySelectorAll('.s').forEach(s=>{if(s.dataset.n!==q)s.remove()})
 document.fonts.ready.then(()=>{const bad=[];document.querySelectorAll('.s').forEach(s=>{const n=s.dataset.n,sr=s.getBoundingClientRect();
  s.querySelectorAll('.pad').forEach(p=>{if(p.scrollHeight>p.clientHeight+2)bad.push(n+':content taller than the slide')});
  s.querySelectorAll('.imgbot,.imgtop').forEach(p=>{const r=p.getBoundingClientRect();if(r.top<sr.top+110||r.bottom>sr.bottom-110)bad.push(n+':text block runs into the margin')});
+ s.querySelectorAll('.imgbot,.imgtop,.pad,h1,h2,.big').forEach(p=>{const r=p.getBoundingClientRect();if(r.width&&(r.left<sr.left+40||r.right>sr.right-40))bad.push(n+':text outside the profile-grid safe zone')});
  s.querySelectorAll('[data-fit]').forEach(e=>{if(e.scrollWidth>e.clientWidth+2)bad.push(n+':a line is wider than the slide ('+e.textContent.trim().slice(0,30)+')')})});
  document.documentElement.dataset.problems=bad.join('|');});
 </script>'''
@@ -841,7 +1026,7 @@ def main():
     ap = argparse.ArgumentParser()
     sp = ap.add_subparsers(dest='cmd', required=True)
     sp.add_parser('list')
-    p = sp.add_parser('new'); p.add_argument('project'); p.add_argument('slug'); p.add_argument('--format', default='4:5', choices=list(CANVAS))
+    p = sp.add_parser('new'); p.add_argument('project'); p.add_argument('slug'); p.add_argument('--format', default='3:4', choices=list(CANVAS))
     p = sp.add_parser('grab'); [p.add_argument(x) for x in ('project', 'take', 'time', 'slug', 'name')]
     p = sp.add_parser('shotlist'); p.add_argument('carousel')
     p = sp.add_parser('build'); p.add_argument('carousel')

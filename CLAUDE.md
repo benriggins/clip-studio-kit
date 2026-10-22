@@ -307,7 +307,10 @@ also be a carousel. **Claude Code has the final say on every slide.**
    (out/motion/, Instagram autoplays video slides) and `carousel.py reel <project>/<slug> --music <bed>` cuts the same
    slides into one 9:16 Reel for the Reels tab / For You feed. Recipes `bigword`, `slate`, `callout`, `monument`,
    `scoreboard` are the cinematic set; `chat`, `notif`, `receipt`, `knockout`, `split`, `lowerthird` are the other
-   openers. **Never ship the same look twice in a row:** rotate the opener and give each slide a `motion` style
+   openers; `notes`, `hottake`, `proof`, `scrapbook`, `collage`, `reveal`, `pano` are the FYP/Explore looks.
+   New carousels default to **3:4 (1080x1440)**. Build on one of the five frameworks in 08 §3a (stats & proof,
+   contrarian, tutorial, problem + fix, before / after), with new images and a new concept every time.
+   **Never ship the same look twice in a row:** rotate the opener and give each slide a `motion` style
    (`push`, `whip`, `type`, `rack`, `cinemagraph`; `--style` forces one). `cinemagraph` slides need
    `carousel.py generate <project>/<slug> --clips` first (Grok animates the photo, ~$0.11 a slide). The Style Lab
    (`projects/sovereign-first-video/carousels/style-lab`) shows every opener and style on one hook.
