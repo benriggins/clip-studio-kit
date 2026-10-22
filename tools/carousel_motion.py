@@ -3,9 +3,11 @@
 
   carousel.py generate <project>/<slug>     GPT Image 2.5 (kie.ai) makes every missing image from its shot prompt
   carousel.py generate <project>/<slug> --clips          also animates every "cinemagraph" slide's photo with Grok (~$0.11)
-  carousel.py motion   <project>/<slug> [--seconds 6] [--style push|whip|type|rack|cinemagraph]   every slide as a 4:5 MP4 (out/motion/01.mp4 …): the photo
-                       pushes in, the subject cut-out moves with it, the type lands in a cascade. Instagram carousels
-                       accept video slides, and they autoplay in the feed.
+  carousel.py motion   <project>/<slug> [--seconds 6] [--style push|whip|type|rack|cinemagraph] [--music f | --silent]
+                       every slide as a 4:5 MP4 (out/motion/01.mp4 …): the photo pushes in, the subject cut-out moves
+                       with it, the type lands in a cascade. The audio is built in: one music bed (ElevenLabs, a new
+                       style each carousel, or carousel.json "music") is cut across the slides, so swiping plays
+                       straight through it. Nobody adds a sound in the app.
   carousel.py reel     <project>/<slug> [--per 2.6] [--music bed.mp3]   the same slides as ONE 9:16 Reel for the
                        Reels tab / For You feed: each slide in turn over a blurred copy of itself, a whoosh per slide,
                        a beat under it.
@@ -207,7 +209,7 @@ def as_video(sec, clip, seconds):
     return re.sub(r'<div class="cut"[^>]*></div>', '', sec)   # a still cut-out would ghost over a moving subject
 
 
-def motion(d, page_html, car, W, H, seconds, forced=None):
+def motion(d, page_html, car, W, H, seconds, forced=None, music=None, silent=False):
     out = d / 'out' / 'motion'
     out.mkdir(parents=True, exist_ok=True)
     for old in out.glob('*.mp4'):
@@ -240,11 +242,57 @@ def motion(d, page_html, car, W, H, seconds, forced=None):
         if r.returncode:
             sys.exit(f'slide {i} motion render failed:\n{(r.stdout + r.stderr)[-1500:]}')
         print(f'  slide {i} ({style}) → out/motion/{i:02d}.mp4')
+    if not silent:
+        soundtrack(d, car, len(car['slides']), seconds, music)
     return out
 
 
+MUSIC = [  # rotated per carousel so no two posts sound alike; carousel.json "music" overrides
+    'Modern minimal hip-hop groove, about 94 BPM, warm Rhodes chords, soft tape texture, tight dry drums, confident and calm.',
+    'Bright lo-fi house, about 118 BPM, plucky synth arpeggio, light claps, warm sub, focused and forward-moving.',
+    'Cinematic minimal piano over a pulsing synth bass, about 100 BPM, sparse modern percussion, quietly confident.',
+    'Funky modern bass groove, about 108 BPM, muted guitar chops, crisp hi-hats, playful but premium.',
+    'Dark minimal trap-influenced groove, about 104 BPM, deep controlled sub, ticking hi-hats, a sparse bell motif, sophisticated.',
+    'Upbeat neo-soul groove, about 98 BPM, round bass, brushed drums, warm keys, optimistic and polished.',
+]
+MUSIC_RULES = (' Instrumental only, no vocals. Starts on the beat with no intro, steady energy the whole way, clean ending.'
+               ' No EDM drop, no corporate stock music, no trailer swells.')
+
+
+def music_bed(d, car, seconds):
+    """The carousel's own bed: carousel.json "music" (a prompt or a file), else the next style in the rotation."""
+    want = car.get('music')
+    if want and (d / want).exists():
+        return d / want
+    import hashlib
+    import produce
+    prompt = want or MUSIC[int(hashlib.md5(d.name.encode()).hexdigest(), 16) % len(MUSIC)]
+    print(f'  music: {prompt[:70]}…')
+    return produce.music(prompt + MUSIC_RULES, seconds)
+
+
+def soundtrack(d, car, n, seconds, music=None):
+    """Cut one bed across the video slides: slide i plays bed[i-1 … i] seconds, so a swipe carries straight on."""
+    bed = Path(music) if music else music_bed(d, car, n * seconds + 3)
+    out = d / 'out' / 'motion'
+    master = out / 'music-master.wav'
+    subprocess.run([FF, '-y', '-v', 'error', '-i', str(bed), '-af', 'loudnorm=I=-14:TP=-1.5', '-ar', '48000', str(master)], check=True)
+    for i in range(1, n + 1):
+        vid, tmp = out / f'{i:02d}.mp4', out / f'{i:02d}-a.mp4'
+        tail = 1.5 if i == n else .12          # the last slide resolves; the others only lose the click at the cut
+        af = (f'atrim={(i - 1) * seconds}:{i * seconds},asetpts=PTS-STARTPTS,'
+              f'afade=t=in:d={.02 if i == 1 else .06},afade=t=out:st={seconds - tail}:d={tail}')
+        subprocess.run([FF, '-y', '-v', 'error', '-i', str(vid), '-i', str(master), '-filter_complex', f'[1:a]{af}[a]',
+                        '-map', '0:v', '-map', '[a]', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '256k', '-shortest', str(tmp)], check=True)
+        tmp.replace(vid)
+    shutil.copy(bed, out / f'music{bed.suffix}')
+    master.unlink()
+    print(f'  audio: one bed across {n} slides → out/motion/music{bed.suffix}')
+
+
 def reel(d, n, per, music):
-    clips = sorted((d / 'out' / 'motion').glob('*.mp4'))
+    clips = sorted((d / 'out' / 'motion').glob('[0-9][0-9].mp4'))
+    music = music or next(iter(sorted((d / 'out' / 'motion').glob('music.*'))), None)
     if not clips:
         sys.exit('run carousel.py motion first')
     out = d / 'out' / 'reel.mp4'

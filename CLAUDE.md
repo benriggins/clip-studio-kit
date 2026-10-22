@@ -304,15 +304,16 @@ also be a carousel. **Claude Code has the final say on every slide.**
    `contact-sheet.jpg`, `ALT.md` and `QA.md`. It fails on text that overflows, low contrast and images that are too
    small. Look at the contact sheet and every slide at phone size, then fix and rebuild.
 5. **Motion (default):** `carousel.py motion <project>/<slug>` renders every slide as a 6 s 4:5 video
-   (out/motion/, Instagram autoplays video slides) and `carousel.py reel <project>/<slug> --music <bed>` cuts the same
+   (out/motion/, Instagram autoplays video slides, with the music built in) and `carousel.py reel <project>/<slug> --music <bed>` cuts the same
    slides into one 9:16 Reel for the Reels tab / For You feed. Recipes `bigword`, `slate`, `callout`, `monument`,
    `scoreboard` are the cinematic set; `chat`, `notif`, `receipt`, `knockout`, `split`, `lowerthird` are the other
    openers; `notes`, `hottake`, `proof`, `scrapbook`, `collage`, `reveal`, `pano` are the FYP/Explore looks.
    New carousels default to **3:4 (1080x1440)**. Build on one of the six frameworks in 08 §3a (stats & proof,
    contrarian, tutorial, problem + fix, before / after, steal this / cheat sheet), with new images and a new
    concept every time. Slide 2 is a second hook (Instagram re-shows it to people who scrolled past slide 1); the
-   last slide asks for one interaction (comment a keyword, share, or save); remind the user to add a trending sound
-   in the app so the carousel can reach the Reels tab.
+   last slide asks for one interaction (comment a keyword, share, or save). **The audio is always built in**:
+   `motion` cuts one music bed (a new style each carousel) across the video slides, and every Reel ships with its
+   own music. Never ask the user to find or add a sound in the app.
    **Never ship the same look twice in a row:** rotate the opener and give each slide a `motion` style
    (`push`, `whip`, `type`, `rack`, `cinemagraph`; `--style` forces one). `cinemagraph` slides need
    `carousel.py generate <project>/<slug> --clips` first (Grok animates the photo, ~$0.11 a slide). The Style Lab

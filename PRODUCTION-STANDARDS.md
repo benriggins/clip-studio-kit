@@ -46,6 +46,9 @@ say on how each rule is applied.
   unless the brand chose otherwise.
 - Music is ducked under the voice. The master lands at −14 LUFS, true peak ≤ −1 dBTP.
 
+- **We do the audio, always (2026-10-22).** Every Reel and every video carousel ships with its music already in
+  the file. Never hand the user (or a posting agent) "add a trending sound in the app"; that is our job.
+
 ## 4. Scripts
 - Every fact, number and name comes from the user's own source (the transcript or the write-up). Never add one.
 - **Flag the claim the whole video rests on** (usually the hook's number or sale) and ask the user to check it

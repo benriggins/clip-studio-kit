@@ -81,8 +81,9 @@ What the algorithm rewards (research, 2026-10-22): swipe-through, time on post, 
 - **The last slide asks for one interaction:** comment a keyword ("Comment SYSTEM and I'll send it"), share to a
   story, or save. A comment keyword beats "DM me" because the comment itself counts.
 - **Save bait wins reach.** Cheat sheets, templates, checklists and step-by-steps get saved; say "save this" on slide 1.
-- **Audio:** tell the user to add a trending sound in the Instagram app before posting; a carousel with audio can
-  also appear in the Reels tab. (Music can't be added through the API, only in the app.)
+- **Audio is built in, never left to the user.** Clip Studio cuts one music bed across the video slides, and every
+  Reel ships with its own music. Never tell the user to find or add a sound. You may suggest a music mood in
+  `"music"` (one sentence: genre, tempo, feel), different from the last carousel.
 - **Length:** up to 20 slides is allowed. Stay at 5 to 10 unless every extra slide is a usable step or template.
 - **Hybrid:** mix video slides with stills (motion on the opener and the reveal); it lifts completion.
 

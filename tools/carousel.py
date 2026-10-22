@@ -1013,7 +1013,7 @@ def cmd_motion(a):
     d = resolve(a.carousel)
     car = json.loads((d / 'carousel.json').read_text())
     page, W, H, _ = build_html(d, car, brand())
-    cm.motion(d, page, car, W, H, a.seconds, a.style)
+    cm.motion(d, page, car, W, H, a.seconds, a.style, a.music, a.silent)
 
 
 def cmd_reel(a):
@@ -1033,6 +1033,7 @@ def main():
     p = sp.add_parser('generate'); p.add_argument('carousel'); p.add_argument('--clips', action='store_true', help='also animate cinemagraph slides with Grok (~$0.11 each)')
     p = sp.add_parser('motion'); p.add_argument('carousel'); p.add_argument('--seconds', type=float, default=6.0)
     p.add_argument('--style', choices=['push', 'whip', 'type', 'rack', 'cinemagraph'], help='one motion style for every slide (else each slide\'s "motion", else push)')
+    p.add_argument('--music', help='use this bed instead of generating one'); p.add_argument('--silent', action='store_true', help='no audio (not for posting)')
     p = sp.add_parser('reel'); p.add_argument('carousel'); p.add_argument('--per', type=float, default=2.6); p.add_argument('--music')
     a = ap.parse_args()
     {'list': cmd_list, 'new': cmd_new, 'grab': cmd_grab, 'shotlist': cmd_shotlist, 'build': cmd_build, 'generate': cmd_generate,
