@@ -20,3 +20,4 @@ chatgpt-project/.done
 
 # downloaded helper programs (DeepFilterNet)
 bin/
+cache/

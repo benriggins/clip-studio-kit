@@ -17,6 +17,12 @@ Run every command from the kit folder (the folder this file is in).
 
 ---
 
+## Every session, first: is there a newer engine?
+Run `tools/update_check.py` (quietly, before anything else). If it prints **UPDATE AVAILABLE**, ask the user in one
+short message, quoting the "what's new" lines in plain words: **"A newer Clip Studio engine is available: <what's
+new>. Do you want to update your Clip Studio engine?"** On yes: `tools/update_check.py --apply` (git pull + doctor),
+then carry on. On no: carry on and don't ask again this session. Never update without asking.
+
 ## 0. First run: what to do when the user says "install", "set me up" or "start"
 
 Check the state, and do only the steps not yet done:
@@ -261,6 +267,19 @@ back a VIDEO_BLUEPRINT. **You have the final say on everything below; ChatGPT's 
    speed, and flag the claim the video rests on for the user to verify. Tell the user in a few lines what you
    changed and why, and deliver one alternate music bed.
 
+### 4.4b The cinema engine: the default for every footage-led Reel / Short (one command)
+When ChatGPT's plan has a `cinema` block (prompt 12, files 09 + 10), build the whole reel with:
+`tools/cinema.py projects/<name>/chatgpt/clip-plan.json [--only <clip>] [--speed 1.10]`
+It does §4.4 end to end in the house "business cinema" look: exact cuts, a filmic grade, B-roll (GPT Image 2.5
+first frame → Grok Imagine Video 1.5 → trim, grade, eased push-in), glass UI cards, timers and check cards on the
+words that trigger them, giant italic words **behind the speaker's head** (Apple Vision cut-out, Mac only), sound
+cues, cinema captions (white, key word big in the display italic), ~10% speed-up, a music bed clearly audible
+under the voice, −14 LUFS, and a contact sheet. Generated media is cached by file name, so re-runs only redo
+what changed. Needs a kie.ai key (`KIE_API_KEY` or `my-studio/kie.local.json`, about $0.45 a reel) and, for music,
+ElevenLabs. Look at the contact sheet and frames at every B-roll cut and big word before delivering.
+Brand look comes from `brand.json` (`colors`, `fonts`, optional `motion` overrides; captions `style: "cinema"`,
+`accent_font`, `accent_scale`). Never: editorial slide pages, coloured/all-caps captions, cards over eyes or mouth.
+
 ### 4.7 Montage (many clips, beat-cut back-and-forth)
 `tools/produce.py montage <project> <name> <clip…> [--bpm 112] [--seconds 20] [--format 16:9] [--music f.mp3]`
 builds a starting `timeline.json`: slow-mo intro → A/B cuts tightening to 1-beat cuts → a rewind → a speed-ramped
@@ -378,6 +397,10 @@ Platform specs:
 | Tool | What it does |
 |---|---|
 | `doctor.py` | checks the install; prints the fix for anything missing |
+| `update_check.py [--apply]` | is a newer engine on GitHub? (run first every session; ask before `--apply`) |
+| `cinema.py <clip-plan.json>` | ONE command: ChatGPT cinema plan → finished business-cinema reel (§4.4b) |
+| `kie.py image/video` | GPT Image 2.5 stills, Grok Imagine Video 1.5 B-roll (kie.ai) |
+| `motionpack.py`, `depth.py`, `broll_fx.py`, `mixdown.py` | the engine's parts: glass UI, behind-the-head cut-out, B-roll finish, sound + music mix |
 | `transcribe.py <files…> --project P [--raw]` | cleans every take's audio first (`cleantake.py`), then takes V1, V2…: word timings + one combined `transcript.txt` for ChatGPT |
 | `cleantake.py <file> [--atten N] [--out f]` | removes noise and background sound, voice EQ, levelling; prints before/after numbers. Run by hand only to test or tune |
 | `plan.py <clip-plan.json> [--only ID]` | ChatGPT's plan → exact cuts (word match + silence snap) + face crops → `<clip>/edit-plan.json` |
