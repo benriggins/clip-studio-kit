@@ -9,8 +9,8 @@
                        style each carousel, or carousel.json "music") is cut across the slides, so swiping plays
                        straight through it. Nobody adds a sound in the app.
   carousel.py reel     <project>/<slug> [--per 2.6] [--music bed.mp3]   the same slides as ONE 9:16 Reel for the
-                       Reels tab / For You feed: each slide in turn over a blurred copy of itself, a whoosh per slide,
-                       a beat under it.
+                       Reels tab / For You feed: each slide in turn over a blurred copy of itself, with the carousel's
+                       music bed under it (or --music).
 """
 import json
 import re
@@ -250,7 +250,7 @@ def motion(d, page_html, car, W, H, seconds, forced=None, music=None, silent=Fal
 MUSIC = [  # rotated per carousel so no two posts sound alike; carousel.json "music" overrides
     'Modern minimal hip-hop groove, about 94 BPM, warm Rhodes chords, soft tape texture, tight dry drums, confident and calm.',
     'Bright lo-fi house, about 118 BPM, plucky synth arpeggio, light claps, warm sub, focused and forward-moving.',
-    'Cinematic minimal piano over a pulsing synth bass, about 100 BPM, sparse modern percussion, quietly confident.',
+    'Elegant minimal modern pulse, about 100 BPM, glassy synth plucks over a warm pulsing bass, sparse percussion, quietly confident.',
     'Funky modern bass groove, about 108 BPM, muted guitar chops, crisp hi-hats, playful but premium.',
     'Dark minimal trap-influenced groove, about 104 BPM, deep controlled sub, ticking hi-hats, a sparse bell motif, sophisticated.',
     'Upbeat neo-soul groove, about 98 BPM, round bass, brushed drums, warm keys, optimistic and polished.',
@@ -307,9 +307,7 @@ def reel(d, n, per, music):
     tmp = d / 'out' / 'reel-silent.mp4'
     subprocess.run([FF, '-y', '-v', 'error', *ins, '-filter_complex', ';'.join(fc), '-map', '[v]', '-c:v', 'libx264', '-crf', '17',
                     '-pix_fmt', 'yuv420p', str(tmp)], check=True)
-    sfx = [{'file': 'whoosh-short', 'at': max(0, k * per - .1), 'db': -20} for k in range(1, len(clips))]
-    sfx += [{'file': 'impact-bass-1', 'at': 0.0, 'db': -16}, {'file': 'chime', 'at': len(clips) * per - .6, 'db': -20}]
-    (d / 'out' / 'reel-sfx.json').write_text(json.dumps(sfx))
+    (d / 'out' / 'reel-sfx.json').write_text('[]')   # PRODUCTION-STANDARDS §3: music only, no stock whooshes or hits
     # silent bed so mixdown has a voice track to sit on
     sil = d / 'out' / 'reel-sil.wav'
     subprocess.run([FF, '-y', '-v', 'error', '-f', 'lavfi', '-i', f'anullsrc=r=48000:cl=stereo', '-t', f'{len(clips) * per:.2f}', str(sil)], check=True)
