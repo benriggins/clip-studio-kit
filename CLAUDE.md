@@ -296,15 +296,22 @@ also be a carousel. **Claude Code has the final say on every slide.**
    number against the source. Never add facts. Personal results stay labelled as the speaker's own.
 2. `tools/carousel.py new <project> <slug> [--format 4:5]`, then write `carousel.json` (recipes: `carousel.py list`).
    5 to 10 slides, never padded, one claim each, slide 2 stands alone, last slide one action.
-3. **Images come from the user** (they generate or find them; Claude Code never generates carousel images).
-   `carousel.py shotlist <project>/<slug>` writes `SHOT-LIST.md`: send it, stop, wait for "images in", then check
-   every file (width at least the canvas width, framing, brand fit) and say exactly why if one won't work. Stills
-   from the user's own video are fine: `carousel.py grab <project> V1 <seconds> <slug> <name>` (pick a frame where
-   they look at the camera; mid-word and mid-blink frames look bad). Type-only and drawn slides can be built meanwhile.
+3. **Images.** Ask the user once per brand which they want and save it in `MY-STYLE.md`: they supply them (send
+   `carousel.py shotlist`, stop, wait for "images in", check every file), or `carousel.py generate <project>/<slug>`
+   makes every missing image from its shot prompt with GPT Image 2.5 (kie.ai, ~$0.03 each). Stills from their own
+   video work too: `carousel.py grab …`. `bigword` covers cut the subject out automatically (Apple Vision, Mac).
 4. `tools/carousel.py build <project>/<slug>` writes `out/01.jpg…`, `carousel.pdf` (the LinkedIn document),
    `contact-sheet.jpg`, `ALT.md` and `QA.md`. It fails on text that overflows, low contrast and images that are too
    small. Look at the contact sheet and every slide at phone size, then fix and rebuild.
-5. **Deliver** `out/`, the caption and the alt text. Never post for the user. Instagram can't link, so end on
+5. **Motion (default):** `carousel.py motion <project>/<slug>` renders every slide as a 6 s 4:5 video
+   (out/motion/, Instagram autoplays video slides) and `carousel.py reel <project>/<slug> --music <bed>` cuts the same
+   slides into one 9:16 Reel for the Reels tab / For You feed. Recipes `bigword`, `slate`, `callout`, `monument`,
+   `scoreboard` are the cinematic set; `chat`, `notif`, `receipt`, `knockout`, `split`, `lowerthird` are the other
+   openers. **Never ship the same look twice in a row:** rotate the opener and give each slide a `motion` style
+   (`push`, `whip`, `type`, `rack`, `cinemagraph`; `--style` forces one). `cinemagraph` slides need
+   `carousel.py generate <project>/<slug> --clips` first (Grok animates the photo, ~$0.11 a slide). The Style Lab
+   (`projects/sovereign-first-video/carousels/style-lab`) shows every opener and style on one hook.
+6. **Deliver** `out/`, the caption and the alt text. Never post for the user. Instagram can't link, so end on
    "link in bio". Brand-specific cinematic recipes (word behind the subject, film slate and so on) go in
    `my-studio/templates/`, like the video slide packs.
 

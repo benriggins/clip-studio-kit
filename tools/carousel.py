@@ -6,6 +6,9 @@
     tools/carousel.py grab <project> <take> <time> <slug> <name>   a still from your own footage -> images/<name>.jpg
     tools/carousel.py shotlist <project>/<slug>         the Image Shot List for every slide that needs an image
     tools/carousel.py build <project>/<slug>            out/01.jpg … + carousel.pdf + contact-sheet.jpg + QA.md + ALT.md
+    tools/carousel.py generate <project>/<slug>         make missing images from each slide's shot prompt (GPT Image 2.5, kie.ai)
+    tools/carousel.py motion <project>/<slug>           every slide as a 4:5 video (photo push-in, type cascade): a video carousel
+    tools/carousel.py reel <project>/<slug> [--music f]  the slides as one 9:16 Reel for the Reels tab / For You feed
 
 Everything reads brand.json (colours, fonts, logo) so every brand looks like itself. Slides are HTML shot with
 headless Chrome; no paid service. Copy uses *asterisks* for the one emphasis word (italic, accent colour) and \\n for
@@ -30,6 +33,17 @@ RECIPES = {
     'photo': 'headline, kicker, lede, position top|bottom, image, pos  . A full-bleed photo carries the slide.',
     'paper': 'eyebrow, title, rows[{k,v}], close, [image]  . A paper card (worksheet / save-this) on a blurred photo.',
     'cta': 'headline, action, url, logo  . The one last action.',
+    'bigword': 'kicker, word, line, sub, image, pos, [timecode, bars]  . CINEMATIC COVER: a giant serif word BEHIND the subject (auto cut-out), small heavy line above, serif line below.',
+    'slate': 'image, pos, timecode, kicker, number, line, [scrub]  . Film still: letterbox bars, REC timecode, one giant accent number, an over-run video scrubber.',
+    'callout': 'image, pos, kicker, headline, sub, note, at{x,y}  . Field note: a thin leader line from a detail in the photo to a two-line serif note.',
+    'monument': 'image, pos, number, horizon, kicker, headline, lede  . A huge outlined number standing behind the horizon line of the photo.',
+    'scoreboard': 'image, pos, kicker, headline, cells[{label,value,sub,on}], note  . A two-cell HUD over the photo (work block / reward, before / after).',
+    'chat': 'contact, status, messages[{who them|me, text, time}], typing, kicker, headline, sub, [image]  . OPENER: a real-looking text thread (the client waiting), headline under it.',
+    'notif': 'clock, date, notes[{app, title, text, ago, icon}], kicker, headline, sub, [image]  . OPENER: a lock screen stacking up notifications.',
+    'receipt': 'store, meta, rows[{k,v}], total{k,v}, foot, kicker, headline, [image]  . OPENER: a thermal receipt itemising what the problem costs.',
+    'knockout': 'kicker, word, line, sub, image, pos  . OPENER: one giant word with the photo showing through the letters.',
+    'split': 'image, pos, image2, pos2, label, label2, headline, sub  . OPENER: before/after diptych, the headline on a paper strip across the seam.',
+    'lowerthird': 'image, pos, bug, place, timecode, headline, sub, ticker, ticker_label  . OPENER: a live-broadcast lower third with a crawling ticker.',
 }
 GRAIN = ("url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E"
          "%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' seed='9'/%3E%3CfeColorMatrix values='0 0 0 0 .5 "
@@ -274,7 +288,256 @@ def r_cta(c, sl):
     return f'<div class="pad pad--c">{big}{act}{url}</div>{logo}', 'dark'
 
 
-R = {'cover': r_cover, 'statement': r_statement, 'quote': r_quote, 'list': r_list, 'compare': r_compare, 'steps': r_steps,
+
+def cut_png(c, sl):
+    """Subject cut-out for word-behind-the-subject (Apple Vision, macOS). Cached as images/<name>-cut.png."""
+    src = (c.d / sl['image']).resolve()
+    out = src.with_name(src.stem + '-cut.png')
+    if not out.exists():
+        r = subprocess.run(['uv', 'run', '-q', '--with', 'pyobjc-framework-Vision', '--with', 'pyobjc-framework-Quartz', 'python',
+                            str(Path(__file__).parent / 'cutout.py'), str(src), str(out)], capture_output=True, text=True)
+        if r.returncode:
+            print(f'  · cut-out failed ({r.stderr.strip()[-120:]}); the word will sit in front instead')
+            return None
+    return out.as_uri()
+
+
+def tc(sl):
+    return f'<p class="tc"><span class="rec"></span>{html.escape(sl["timecode"])}</p>' if sl.get('timecode') else ''
+
+
+def r_bigword(c, sl):
+    pos = sl.get('pos', 'center 55%')
+    cut = cut_png(c, sl) if sl.get('image') else None
+    word = html.escape(sl['word'])
+    size = min(400, int(c.W * 1.55 / max(3, len(sl['word']))))
+    layer = f'<div class="cut" style="background-image:url({cut});background-position:{pos}"></div>' if cut else ''
+    k = f'<p class="bw__a">{rich(sl["kicker"])}</p>' if sl.get('kicker') else ''
+    line = f'<p class="bw__c">{rich(sl["line"])}</p>' if sl.get('line') else ''
+    sub = f'<p class="bw__s">{rich(sl["sub"])}</p>' if sl.get('sub') else ''
+    bars = '<div class="bars"></div>' if sl.get('bars', True) else ''
+    return (c.photo(sl) + '<div class="tint"></div><div class="shade shade--bw"></div>'
+            f'<div class="bw" style="top:{sl.get("word_top", int(c.H * .28))}px">{k}<p class="bw__big" style="font-size:{size}px">{word}</p></div>'
+            f'{layer}<div class="slate__tc">{tc(sl)}</div><div class="bw__b">{line}{sub}</div>{bars}'), 'dark img'
+
+
+def r_slate(c, sl):
+    scrub = ''
+    if sl.get('scrub', True):
+        scrub = (f'<div class="scrub"><span class="scrub__play">▶</span><div class="scrub__bar"><i></i><b></b></div>'
+                 f'<span class="scrub__t">{html.escape(sl.get("scrub_label", ""))}</span></div>')
+    k = f'<p class="sl__a">{rich(sl["kicker"])}</p>' if sl.get('kicker') else ''
+    num = f'<p class="sl__big">{rich(sl["number"])}</p>' if sl.get('number') else ''
+    line = f'<p class="sl__c">{rich(sl["line"])}</p>' if sl.get('line') else ''
+    return (c.photo(sl) + '<div class="tint"></div><div class="shade shade--bottom"></div>'
+            f'<div class="slate__tc">{tc(sl)}</div><div class="imgbot">{k}{num}{line}{scrub}</div><div class="bars"></div>'), 'dark img'
+
+
+def r_callout(c, sl):
+    at = sl.get('at', {'x': 400, 'y': 900})
+    k = f'<p class="k">{rich(sl["kicker"])}</p>' if sl.get('kicker') else ''
+    big = h(sl['headline'], c.disp, c.inner, c.H * .22, 112, 60, 'big', 1.02)
+    sub = f'<h2 class="co__s">{rich(sl["sub"])}</h2>' if sl.get('sub') else ''
+    note = (f'<div class="callout" style="left:{at["x"]}px;top:{at["y"]}px"><svg viewBox="0 0 420 150" width="420">'
+            '<circle cx="18" cy="132" r="7" fill="none" stroke="#fff" stroke-width="2.5"/>'
+            f'<path d="M28,124 L150,30 L410,30" fill="none" stroke="#fff" stroke-width="2"/></svg><p>{rich(sl.get("note", ""))}</p></div>')
+    return (c.photo(sl) + '<div class="tint"></div><div class="shade shade--top"></div>'
+            f'<div class="imgtop">{k}{big}{sub}</div>{note}'), 'dark img'
+
+
+def r_monument(c, sl):
+    hz = int(sl.get('horizon', c.H * .62))
+    k = f'<p class="k">{rich(sl["kicker"])}</p>' if sl.get('kicker') else ''
+    big = h(sl['headline'], c.disp, c.inner, c.H * .2, 80, 52, 'big', 1.06) if sl.get('headline') else ''
+    lede = f'<p class="lede lede--s">{rich(sl["lede"])}</p>' if sl.get('lede') else ''
+    return (c.photo(sl) + '<div class="shade shade--bottom"></div>'
+            f'<div class="mon" style="height:{hz}px"><span>{html.escape(str(sl["number"]))}</span></div>'
+            f'<div class="imgtop">{k}</div><div class="imgbot">{big}{lede}</div>'), 'dark img'
+
+
+def r_scoreboard(c, sl):
+    k = f'<p class="k">{rich(sl["kicker"])}</p>' if sl.get('kicker') else ''
+    big = h(sl['headline'], c.disp, c.inner, c.H * .2, 80, 52, 'big', 1.06) if sl.get('headline') else ''
+    cells = ''.join(f'<div class="board__c{" board__c--on" if x.get("on") else ""}"><span class="board__l">{rich(x["label"])}</span>'
+                    f'<b>{html.escape(str(x["value"]))}</b><span class="board__s">{rich(x.get("sub", ""))}</span></div>' for x in sl['cells'])
+    note = f'<p class="note">{rich(sl["note"])}</p>' if sl.get('note') else ''
+    return (c.photo(sl) + '<div class="tint"></div><div class="shade shade--bottom"></div>'
+            f'<div class="imgbot">{k}{big}<div class="board">{cells}</div>{note}</div>'), 'dark img'
+
+
+def heading(c, sl, hi=96, lo=54, room=.2):
+    k = f'<p class="k">{rich(sl["kicker"])}</p>' if sl.get('kicker') else ''
+    big = h(sl['headline'], c.disp, c.inner, c.H * room, hi, lo, 'big', 1.04) if sl.get('headline') else ''
+    sub = f'<p class="note">{rich(sl["sub"])}</p>' if sl.get('sub') else ''
+    return k + big + sub
+
+
+def backdrop(c, sl, blur=True):
+    if not sl.get('image'):
+        return '<div class="shade shade--desk"></div>'
+    return c.photo(sl, 'bg--blur' if blur else '') + '<div class="tint"></div><div class="shade shade--desk"></div>'
+
+
+def r_chat(c, sl):
+    who = sl.get('contact', 'Client')
+    head = (f'<div class="ch__h"><span class="ch__av">{html.escape(who[:1])}</span><b>{html.escape(who)}</b>'
+            f'<span>{html.escape(sl.get("status", "iMessage"))}</span></div>')
+    msgs = ''.join(f'<div class="msg msg--{m.get("who", "them")}"><p>{rich(m["text"])}</p>'
+                   f'{"<span>" + html.escape(m["time"]) + "</span>" if m.get("time") else ""}</div>' for m in sl['messages'])
+    if sl.get('typing'):
+        msgs += '<div class="msg msg--them msg--typing"><p><i></i><i></i><i></i></p></div>'
+    return backdrop(c, sl) + f'<div class="chat">{head}{msgs}</div><div class="imgbot">{heading(c, sl)}</div>', 'dark img'
+
+
+def r_notif(c, sl):
+    cards = ''.join(f'<div class="ntf"><span class="ntf__i">{html.escape(n.get("icon", n["app"][:1]))}</span><div><p class="ntf__a">'
+                    f'{html.escape(n["app"])}<span>{html.escape(n.get("ago", "now"))}</span></p><p class="ntf__t">{rich(n["title"])}</p>'
+                    f'<p class="ntf__x">{rich(n.get("text", ""))}</p></div></div>' for n in sl['notes'])
+    clock = (f'<div class="lock"><p class="lock__d">{html.escape(sl.get("date", "Tuesday, October 21"))}</p>'
+             f'<p class="lock__t">{html.escape(sl.get("clock", "4:52"))}</p></div>')
+    return backdrop(c, sl) + f'{clock}<div class="ntfs">{cards}</div><div class="imgbot">{heading(c, sl, 80, 48, .14)}</div>', 'dark img'
+
+
+def r_receipt(c, sl):
+    rows = ''.join(f'<p class="rc__r"><span>{rich(r["k"])}</span><b>{html.escape(str(r["v"]))}</b></p>' for r in sl['rows'])
+    tot = sl.get('total') or {}
+    total = f'<p class="rc__r rc__tot"><span>{rich(tot.get("k", "Total"))}</span><b>{html.escape(str(tot.get("v", "")))}</b></p>' if tot else ''
+    rc = (f'<div class="rc"><p class="rc__s">{rich(sl.get("store", ""))}</p><p class="rc__m">{html.escape(sl.get("meta", ""))}</p>'
+          f'<p class="rc__d"></p>{rows}<p class="rc__d"></p>{total}<p class="rc__f">{rich(sl.get("foot", ""))}</p></div>')
+    return backdrop(c, sl) + f'<div class="imgtop">{heading(c, sl, 92, 54, .16)}</div>{rc}', 'dark img'
+
+
+def r_knockout(c, sl):
+    word = sl['word']
+    size = min(560, int(c.W * 1.62 / max(2, len(word))))
+    k = f'<p class="ko__k">{rich(sl["kicker"])}</p>' if sl.get('kicker') else ''
+    line = f'<p class="ko__l">{rich(sl["line"])}</p>' if sl.get('line') else ''
+    sub = f'<p class="sub">{rich(sl["sub"])}</p>' if sl.get('sub') else ''
+    img = c.img(sl['image'])
+    return (f'<div class="pad pad--c ko">{k}<p class="ko__w" style="font-size:{size}px;background-image:url({img});'
+            f'background-position:{sl.get("pos", "center")}">{html.escape(word)}</p>{line}{sub}</div>'), 'dark'
+
+
+def r_split(c, sl):
+    top = f'<div class="sp sp--a" style="background-image:url({c.img(sl["image"])});background-position:{sl.get("pos", "center")}"></div>'
+    if sl.get('image2'):
+        bot = (f'<div class="sp sp--b" style="background-image:url({c.img(sl["image2"])});'
+               f'background-position:{sl.get("pos2", "center")}"></div>')
+    else:
+        bot = '<div class="sp sp--b sp--ink"></div>'
+    lab = ''.join(f'<p class="sp__l sp__l--{i}">{html.escape(sl[k])}</p>' for i, k in (('a', 'label'), ('b', 'label2')) if sl.get(k))
+    big = h(sl['headline'], c.disp, c.inner - 80, 260, 104, 56, 'big', 1.02)
+    sub = f'<p class="sp__s">{rich(sl["sub"])}</p>' if sl.get('sub') else ''
+    return top + bot + lab + f'<div class="sp__seam">{big}</div>{sub}', 'dark img'
+
+
+def r_lowerthird(c, sl):
+    tick = ''
+    if sl.get('ticker'):
+        t = html.escape(sl['ticker'])
+        tick = f'<div class="lt__tk"><b>{html.escape(sl.get("ticker_label", "Update"))}</b><span>{t} &nbsp;•&nbsp; {t} &nbsp;•&nbsp; {t}</span></div>'
+    bug = f'<p class="lt__bug"><span class="rec"></span>{html.escape(sl.get("bug", "Live"))}<i>{html.escape(sl.get("place", ""))}</i></p>'
+    big = h(sl['headline'], c.body, c.inner - 190, 220, 70, 44, 'lt__h', 1.05, 'p')   # measured at regular, set at 800
+    sub = f'<p class="lt__s">{rich(sl["sub"])}</p>' if sl.get('sub') else ''
+    return (c.photo(sl) + '<div class="shade shade--bottom"></div>'
+            f'<div class="slate__tc">{tc(sl)}</div><div class="lt">{bug}<div class="lt__p">{big}</div>{sub}</div>{tick}'), 'dark img'
+
+
+LAB_CSS = """
+.chat { position:absolute; left:96px; right:96px; top:150px; z-index:3; font-family:system-ui,-apple-system,sans-serif; }
+.ch__h { display:flex; align-items:center; gap:18px; padding-bottom:26px; margin-bottom:22px; border-bottom:1px solid rgba(255,255,255,.18); color:#fff; }
+.ch__av { width:64px; height:64px; border-radius:50%; display:grid; place-items:center; font:600 30px/1 system-ui; background:linear-gradient(180deg,#9aa0ad,#6c7280); }
+.ch__h b { font:600 32px/1 system-ui; } .ch__h span:last-child { margin-left:auto; font:400 24px/1 system-ui; color:rgba(255,255,255,.55); }
+.msg { display:flex; flex-direction:column; margin:14px 0; } .msg p { margin:0; max-width:74%; padding:22px 30px; border-radius:40px; font:400 36px/1.28 system-ui,-apple-system,sans-serif; }
+.msg--them { align-items:flex-start; } .msg--them p { background:rgba(58,58,64,.94); color:#fff; border-bottom-left-radius:12px; }
+.msg--me { align-items:flex-end; } .msg--me p { background:linear-gradient(180deg,#3a8dff,#0a6cf1); color:#fff; border-bottom-right-radius:12px; }
+.msg span { margin:8px 14px 0; font:500 20px/1 system-ui; color:rgba(255,255,255,.5); }
+.msg em { color:inherit; font-style:normal; font-weight:700; }
+.msg--typing p { display:flex; gap:10px; padding:28px 32px; } .msg--typing i { width:16px; height:16px; border-radius:50%; background:rgba(255,255,255,.55); }
+.lock { position:absolute; left:0; right:0; top:104px; z-index:3; text-align:center; color:#fff; font-family:system-ui,-apple-system,sans-serif; }
+.lock__d { margin:0; font:600 30px/1 system-ui; opacity:.9; } .lock__t { margin:6px 0 0; font:600 176px/1 system-ui; letter-spacing:-.03em; }
+.ntfs { position:absolute; left:64px; right:64px; top:345px; z-index:3; display:flex; flex-direction:column; gap:16px; }
+.ntf { display:flex; gap:22px; padding:20px 26px; border-radius:34px; background:rgba(245,245,250,.2); backdrop-filter:blur(30px) saturate(1.5); -webkit-backdrop-filter:blur(30px) saturate(1.5); color:#fff; font-family:system-ui,-apple-system,sans-serif; box-shadow:0 10px 40px rgba(0,0,0,.25); }
+.ntf > div { flex:1; min-width:0; }
+.ntf__i { flex:none; width:62px; height:62px; border-radius:15px; display:grid; place-items:center; background:var(--ac); color:var(--bgd); font:700 30px/1 system-ui; }
+.ntf__a { margin:0; display:flex; justify-content:space-between; font:500 22px/1 system-ui; text-transform:uppercase; letter-spacing:.04em; color:rgba(255,255,255,.7); }
+.ntf__t { margin:8px 0 0; font:600 30px/1.2 system-ui; } .ntf__x { margin:4px 0 0; font:400 28px/1.25 system-ui; color:rgba(255,255,255,.88); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ntf em { color:inherit; font-style:normal; }
+.rc { position:absolute; left:50%; top:430px; z-index:3; width:720px; margin-left:-360px; padding:44px 46px 70px; transform:rotate(-2.2deg);
+  background:linear-gradient(180deg,#fbfaf6,#efece2); color:#1d1b18; font-family:var(--mono); box-shadow:0 50px 80px rgba(0,0,0,.55);
+  -webkit-mask:linear-gradient(#000,#000) top/100% calc(100% - 22px) no-repeat, conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/36px 22px repeat-x; }
+.rc__s { margin:0; text-align:center; font:700 34px/1.1 var(--mono); letter-spacing:.1em; text-transform:uppercase; }
+.rc__m { margin:12px 0 0; text-align:center; font:500 20px/1 var(--mono); letter-spacing:.12em; color:#6b665c; text-transform:uppercase; }
+.rc__d { margin:22px 0; border-top:3px dashed #8d877a; }
+.rc__r { margin:12px 0 0; display:flex; justify-content:space-between; gap:20px; font:500 31px/1.3 var(--mono); }
+.rc__r b { font-weight:700; white-space:nowrap; } .rc__r em { font-style:normal; }
+.rc__tot { font-size:40px; font-weight:700; } .rc__tot b { color:#9a1b1b; }
+.rc__f { margin:30px 0 0; text-align:center; font:500 21px/1.35 var(--mono); letter-spacing:.06em; color:#6b665c; text-transform:uppercase; } .rc__f em { font-style:normal; color:#1d1b18; }
+.ko { align-items:center; text-align:center; }
+.ko__k { margin:0 0 -10px; font:800 74px/1 var(--sans); letter-spacing:-.035em; color:var(--tx); }
+.ko__w { margin:0; font-family:var(--serif); font-weight:900; line-height:.86; letter-spacing:-.06em; font-variation-settings:"opsz" 144, "SOFT" 0, "WONK" 0;
+  background-size:cover; -webkit-background-clip:text; background-clip:text; color:transparent; filter:saturate(1.25) contrast(1.1) brightness(1.3); -webkit-text-stroke:2px rgba(255,255,255,.55); white-space:nowrap; }
+.ko__l { margin:18px 0 0; font:500 92px/1 var(--serif); letter-spacing:-.03em; color:var(--tx); }
+.sp { position:absolute; left:0; right:0; background-size:cover; z-index:0; filter:saturate(.9) contrast(1.05); }
+.sp--a { top:0; height:52%; } .sp--b { bottom:0; height:48%; filter:grayscale(.15) saturate(.85) contrast(1.05); }
+.sp--ink { background:linear-gradient(180deg,var(--bg),var(--bgd)); }
+.sp__l { position:absolute; left:96px; z-index:2; margin:0; padding:10px 16px; font:700 20px/1 var(--mono); letter-spacing:.22em; text-transform:uppercase; color:#fff; background:rgba(0,0,0,.55); }
+.sp__l--a { top:120px; } .sp__l--b { bottom:150px; }
+.sp__seam { position:absolute; left:56px; right:56px; top:52%; transform:translateY(-50%); z-index:3; padding:34px 40px; background:var(--paper); color:var(--ink); box-shadow:0 30px 70px rgba(0,0,0,.5); }
+.sp__seam .big { color:var(--ink); } .sp__seam em { color:var(--acl); }
+.sp__s { position:absolute; left:96px; right:96px; bottom:210px; z-index:3; margin:0; font:500 46px/1.15 var(--serif); color:#fff; text-align:right; text-shadow:0 2px 20px rgba(0,0,0,.8); }
+.lt { position:absolute; left:64px; right:64px; bottom:200px; z-index:3; }
+.lt__bug { display:inline-flex; align-items:center; gap:14px; margin:0; padding:14px 22px; background:var(--ac); color:var(--bgd); font:800 24px/1 var(--sans); letter-spacing:.2em; text-transform:uppercase; }
+.lt__bug .rec { background:var(--bgd); box-shadow:none; } .lt__bug i { font-style:normal; font-weight:600; letter-spacing:.08em; text-transform:none; padding-left:14px; border-left:2px solid rgba(0,0,0,.3); }
+.lt__p { background:#fff; padding:26px 32px; } .lt__h { margin:0; font-family:var(--sans); font-weight:800; letter-spacing:-.02em; color:var(--ink); }
+.lt__h em { font-family:var(--serif); font-style:italic; font-weight:500; color:var(--acl); }
+.lt__s { margin:0; padding:18px 32px; background:rgba(10,6,20,.88); font:500 30px/1.25 var(--sans); color:#fff; }
+.lt__tk { position:absolute; left:0; right:0; bottom:110px; z-index:3; display:flex; height:58px; overflow:hidden; background:rgba(0,0,0,.85); font:600 25px/58px var(--sans); color:#fff; white-space:nowrap; }
+.lt__tk b { position:relative; z-index:2; flex:none; padding:0 24px; background:var(--ac); color:var(--bgd); text-transform:uppercase; letter-spacing:.14em; }
+.lt__tk span { padding-left:28px; }
+"""
+
+
+CINEMA_CSS = """
+.bars::before,.bars::after { content:""; position:absolute; left:0; right:0; height:96px; background:#000; z-index:7; }
+.bars::before { top:0; } .bars::after { bottom:0; }
+.tc { margin:0; display:inline-flex; align-items:center; gap:12px; font:700 21px/1 var(--sans); letter-spacing:.24em; text-transform:uppercase; color:#fff; font-variant-numeric:tabular-nums; }
+.rec { width:12px; height:12px; border-radius:50%; background:var(--ac); box-shadow:0 0 14px var(--ac); }
+.slate__tc { position:absolute; left:96px; top:118px; z-index:8; }
+.shade--bw { background:linear-gradient(180deg, rgba(0,0,0,.78), rgba(0,0,0,.2) 30%, rgba(0,0,0,0) 50%, rgba(0,0,0,.5) 70%, rgba(0,0,0,.94) 88%); }
+.bw { position:absolute; left:0; right:0; z-index:2; text-align:center; }
+.bw__a { margin:0; font:800 92px/1 var(--sans); letter-spacing:-.035em; color:#fff; }
+.bw__big { margin:-60px 0 0; font-family:var(--serif); font-weight:500; line-height:.9; letter-spacing:-.055em; color:var(--paper); font-variation-settings:"opsz" 144; text-shadow:0 20px 60px rgba(0,0,0,.35); white-space:nowrap; }
+.cut { position:absolute; inset:0; background-size:cover; z-index:3; filter:saturate(.9) contrast(1.05); }
+.bw__b { position:absolute; left:96px; right:96px; bottom:140px; z-index:4; text-align:center; }
+.bw__c { margin:0; font:500 108px/1 var(--serif); letter-spacing:-.03em; color:#fff; }
+.bw__s { margin:30px 0 0; font:700 22px/1 var(--sans); letter-spacing:.24em; text-transform:uppercase; color:var(--ac); }
+.sl__a { margin:0; font:800 58px/1 var(--sans); letter-spacing:-.03em; color:#fff; }
+.sl__big { margin:6px 0 0 -8px; font-family:var(--serif); font-size:270px; font-weight:500; line-height:.88; letter-spacing:-.055em; color:var(--ac); }
+.sl__c { margin:10px 0 0; font:500 80px/1.02 var(--serif); letter-spacing:-.025em; color:#fff; }
+.scrub { display:flex; align-items:center; gap:22px; margin-top:40px; font:700 22px/1 var(--sans); letter-spacing:.14em; color:rgba(255,255,255,.85); font-variant-numeric:tabular-nums; }
+.scrub__play { font-size:22px; color:var(--ac); }
+.scrub__bar { position:relative; flex:1; height:6px; background:rgba(255,255,255,.25); }
+.scrub__bar i { position:absolute; left:0; top:0; bottom:0; width:100%; background:var(--ac); }
+.scrub__bar b { position:absolute; right:-10px; top:-9px; width:24px; height:24px; border-radius:50%; background:#fff; box-shadow:0 0 18px var(--ac); }
+.co__s { margin-top:22px; font-size:62px; line-height:1.1; color:#fff; }
+.callout { position:absolute; z-index:3; } .callout svg { display:block; }
+.callout p { position:absolute; left:160px; top:-66px; margin:0; white-space:nowrap; font:500 46px/1.05 var(--serif); color:#fff; text-shadow:0 2px 22px rgba(0,0,0,.9); }
+.callout em { color:#fff; }
+.mon { position:absolute; left:0; right:0; top:0; overflow:hidden; z-index:1; text-align:center; }
+.mon span { position:absolute; left:0; right:0; bottom:-78px; font-family:var(--serif); font-size:640px; font-weight:500; line-height:1; letter-spacing:-.06em; color:transparent; -webkit-text-stroke:3px rgba(255,255,255,.85); background:linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.18)); -webkit-background-clip:text; background-clip:text; }
+.board { display:grid; grid-template-columns:1fr 1fr; margin-top:40px; border:2px solid var(--ac); background:rgba(0,0,0,.72); }
+.board__c { display:flex; flex-direction:column; gap:10px; padding:24px 28px; } .board__c + .board__c { border-left:2px solid var(--ac); }
+.board__c--on { background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.03)); }
+.board__l { font:700 19px/1 var(--sans); letter-spacing:.28em; text-transform:uppercase; color:rgba(255,255,255,.7); }
+.board b { font:800 62px/1.05 var(--sans); color:#fff; font-variant-numeric:tabular-nums; white-space:nowrap; letter-spacing:-.02em; } .board__c--on b { color:var(--ac); }
+.board__s { font:600 22px/1.3 var(--sans); color:rgba(255,255,255,.82); }
+.s--img > .pad { padding-left:96px; padding-right:96px; }
+"""
+
+
+R = {'chat': r_chat, 'notif': r_notif, 'receipt': r_receipt, 'knockout': r_knockout, 'split': r_split, 'lowerthird': r_lowerthird,
+     'bigword': r_bigword, 'slate': r_slate, 'callout': r_callout, 'monument': r_monument, 'scoreboard': r_scoreboard, 'cover': r_cover, 'statement': r_statement, 'quote': r_quote, 'list': r_list, 'compare': r_compare, 'steps': r_steps,
      'stat': r_stat, 'photo': r_photo, 'paper': r_paper, 'cta': r_cta}
 
 
@@ -354,7 +617,7 @@ em {{ font-style:italic; font-weight:400; color:var(--acc); }}
 .btn span {{ font-size:40px; }}
 .url {{ margin:30px 0 0; font:600 26px/1 var(--mono); letter-spacing:.16em; color:var(--acc); }}
 .logo {{ position:absolute; left:96px; bottom:120px; height:56px; z-index:5; }}
-'''
+''' + CINEMA_CSS + LAB_CSS
 
 
 def build_html(d, car, b):
@@ -375,7 +638,7 @@ def build_html(d, car, b):
         foot = f'<span>{html.escape(car.get("signoff", b["name"]))}</span>' if i == total else '<span class="sw">Swipe →</span>'
         secs.append(f'<section class="s s--{th} {cls}" data-n="{i}">{body}<div class="grain"></div><div class="fr"></div>'
                     f'<header class="top"><span></span><span>{i:02d} / {total:02d}</span></header>'
-                    f'<footer class="foot"><span>{html.escape(series)}</span>{foot}</footer></section>')
+                    f'<footer class="foot"><span>{html.escape(series) if i < total else ""}</span>{foot}</footer></section>')
     js = '''<script>
 const q=new URLSearchParams(location.search).get('n');
 if(q)document.querySelectorAll('.s').forEach(s=>{if(s.dataset.n!==q)s.remove()});
@@ -553,6 +816,27 @@ def cmd_build(a):
         sys.exit(1)
 
 
+def cmd_generate(a):
+    import kie
+    import carousel_motion as cm
+    d = resolve(a.carousel)
+    cm.generate(d, json.loads((d / 'carousel.json').read_text()), kie, a.clips)
+
+
+def cmd_motion(a):
+    import carousel_motion as cm
+    d = resolve(a.carousel)
+    car = json.loads((d / 'carousel.json').read_text())
+    page, W, H, _ = build_html(d, car, brand())
+    cm.motion(d, page, car, W, H, a.seconds, a.style)
+
+
+def cmd_reel(a):
+    import carousel_motion as cm
+    d = resolve(a.carousel)
+    cm.reel(d, len(json.loads((d / 'carousel.json').read_text())['slides']), a.per, a.music)
+
+
 def main():
     ap = argparse.ArgumentParser()
     sp = ap.add_subparsers(dest='cmd', required=True)
@@ -561,8 +845,13 @@ def main():
     p = sp.add_parser('grab'); [p.add_argument(x) for x in ('project', 'take', 'time', 'slug', 'name')]
     p = sp.add_parser('shotlist'); p.add_argument('carousel')
     p = sp.add_parser('build'); p.add_argument('carousel')
+    p = sp.add_parser('generate'); p.add_argument('carousel'); p.add_argument('--clips', action='store_true', help='also animate cinemagraph slides with Grok (~$0.11 each)')
+    p = sp.add_parser('motion'); p.add_argument('carousel'); p.add_argument('--seconds', type=float, default=6.0)
+    p.add_argument('--style', choices=['push', 'whip', 'type', 'rack', 'cinemagraph'], help='one motion style for every slide (else each slide\'s "motion", else push)')
+    p = sp.add_parser('reel'); p.add_argument('carousel'); p.add_argument('--per', type=float, default=2.6); p.add_argument('--music')
     a = ap.parse_args()
-    {'list': cmd_list, 'new': cmd_new, 'grab': cmd_grab, 'shotlist': cmd_shotlist, 'build': cmd_build}[a.cmd](a)
+    {'list': cmd_list, 'new': cmd_new, 'grab': cmd_grab, 'shotlist': cmd_shotlist, 'build': cmd_build, 'generate': cmd_generate,
+     'motion': cmd_motion, 'reel': cmd_reel}[a.cmd](a)
 
 
 if __name__ == '__main__':

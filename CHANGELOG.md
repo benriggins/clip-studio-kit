@@ -1,5 +1,15 @@
 # What's new in Clip Studio
 
+## 2026-10-22: cinematic carousels and video carousels
+- Six new carousel openers so no two posts look the same: text thread, lock-screen notifications, receipt, photo
+  inside the word, before/after split, live lower third with a ticker.
+- Five video-slide styles: push, whip (fast), type (messages pop in, the headline types on), rack focus, and
+  cinemagraph (Grok animates the slide's photo). Replace 08 in your ChatGPT Project; prompt 13 picks them for you.
+- Five cinematic carousel slides: a giant word behind the subject's head (auto cut-out), film slate, field-note callout,
+  monument number behind the horizon, scoreboard.
+- `carousel.py generate` makes carousel images with GPT Image 2.5; `carousel.py motion` turns every slide into a video
+  slide; `carousel.py reel` cuts the carousel into one 9:16 Reel for the For You feed. ChatGPT prompt 13.
+
 ## 2026-10-21: the cinema engine
 - One command, `tools/cinema.py`, turns a ChatGPT plan into a finished premium "business cinema" Reel or Short.
 - Generated B-roll: GPT Image 2.5 first frames animated with Grok Imagine Video 1.5 (kie.ai), graded to match you.
