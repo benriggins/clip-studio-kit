@@ -1,5 +1,9 @@
 # What's new in Clip Studio
 
+## 2026-10-24: Instagram carousels post as stills
+- A carousel now posts as its still slides (1080x1440, checked), with the caption in a POSTING.md and no audio in the
+  files, because a video slide blocks adding music in the Instagram app. Reels still ship with music built in.
+
 ## 2026-10-22: cinematic carousels and video carousels
 - Carousels learn what Instagram rewards: a sixth framework ("steal this" cheat sheets, built to be saved), slide 2
   written as a second hook, a last slide that asks for a comment keyword, share or save, and a reminder to add a

@@ -311,14 +311,17 @@ also be a carousel. **Claude Code has the final say on every slide.**
    New carousels default to **3:4 (1080x1440)**. Build on one of the six frameworks in 08 §3a (stats & proof,
    contrarian, tutorial, problem + fix, before / after, steal this / cheat sheet), with new images and a new
    concept every time. Slide 2 is a second hook (Instagram re-shows it to people who scrolled past slide 1); the
-   last slide asks for one interaction (comment a keyword, share, or save). **The audio is always built in**:
-   `motion` cuts one music bed (a new style each carousel) across the video slides, and every Reel ships with its
-   own music. Never ask the user to find or add a sound in the app.
+   last slide asks for one interaction (comment a keyword, share, or save). **Instagram carousels post as STILLS**
+   (`out/01.jpg…`), because a video slide blocks adding music in the app and the user adds the music there. Never
+   put audio in carousel stills. `motion` (video slides, music cut across them, or `--silent`) and `reel` are for the
+   Reel version, which always ships with its music built in.
    **Never ship the same look twice in a row:** rotate the opener and give each slide a `motion` style
    (`push`, `whip`, `type`, `rack`, `cinemagraph`; `--style` forces one). `cinemagraph` slides need
    `carousel.py generate <project>/<slug> --clips` first (Grok animates the photo, ~$0.11 a slide). The Style Lab
    (`projects/sovereign-first-video/carousels/style-lab`) shows every opener and style on one hook.
-6. **Deliver** `out/`, the caption and the alt text. Never post for the user. Instagram can't link, so end on
+6. **Deliver** the stills in order, 1080x1440 checked with `sips`, plus a `POSTING.md` (account, post time, the
+   caption word for word, "music is added in the Instagram app"). Send them however `MY-STYLE.md` says (for
+   example, texted to the user's phone). Never post for the user. Instagram can't link, so end on
    "link in bio". Brand-specific cinematic recipes (word behind the subject, film slate and so on) go in
    `my-studio/templates/`, like the video slide packs.
 

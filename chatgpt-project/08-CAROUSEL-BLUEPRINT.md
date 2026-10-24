@@ -81,9 +81,10 @@ What the algorithm rewards (research, 2026-10-22): swipe-through, time on post, 
 - **The last slide asks for one interaction:** comment a keyword ("Comment SYSTEM and I'll send it"), share to a
   story, or save. A comment keyword beats "DM me" because the comment itself counts.
 - **Save bait wins reach.** Cheat sheets, templates, checklists and step-by-steps get saved; say "save this" on slide 1.
-- **Audio is built in, never left to the user.** Clip Studio cuts one music bed across the video slides, and every
-  Reel ships with its own music. Never tell the user to find or add a sound. You may suggest a music mood in
-  `"music"` (one sentence: genre, tempo, feel), different from the last carousel.
+- **Instagram carousels post as STILL images (standing rule, 2026-10-24).** A video slide blocks adding music in
+  the Instagram app, and the music is added in the app when posting. So the posted carousel is the still slides
+  only, with no audio in the files. Suggest one music mood in `"music"` (genre, tempo, feel) for the poster to
+  pick in the app. Reels are different: every Reel ships with its own music built in.
 - **Length:** up to 20 slides is allowed. Stay at 5 to 10 unless every extra slide is a usable step or template.
 - **Hybrid:** mix video slides with stills (motion on the opener and the reveal); it lifts completion.
 
@@ -105,9 +106,9 @@ Name the framework and the look before the JSON (`"framework"`, `"aesthetic"`), 
 - Open on a strong opener over a real, cinematic photo. Mix image slides (emotion, metaphor, proof) with drawn
   slides (`statement`, `steps`, `paper`) for mechanisms. Cream only ever appears as a `paper` card on a blurred photo.
 - One giant word per slide at most; one emphasis word in the accent colour. Page count top right, no brand on top.
-- Every carousel also ships as **video slides** (each slide animates for 6 s: photo push-in, the word slides in
-  behind the head, type cascades) and as **one 9:16 Reel** for the Reels tab / For You feed. Write copy that works
-  for both: every slide readable in under 2.5 seconds.
+- The carousel itself posts as **stills** (above). The same slides can also become video slides and **one 9:16
+  Reel** for the Reels tab, with music built in. Write copy that works for both: every slide readable in under
+  2.5 seconds.
 
 ## 4. Image shots (generated with GPT Image 2.5, or supplied by the user)
 Images can sit on the slide (`image` + `shot`) or inside `photos[]`, `layers[]` and `pano` (each with its own
