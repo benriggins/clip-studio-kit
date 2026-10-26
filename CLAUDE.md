@@ -419,7 +419,7 @@ Platform specs:
 | Platform | Canvas | Typical length |
 |---|---|---|
 | Reels / Shorts / TikTok | 9:16, 1080×1920 | 30–60 s |
-| LinkedIn | 16:9, 1920×1080 (or 9:16 vertical) | 60–105 s |
+| LinkedIn | 16:9, 1920×1080 (vertical footage in a `frame` card) | a little over 60 s (62–75 s) |
 | YouTube long-form | 16:9 | whatever delivers the promise |
 | Instagram feed / carousel | 3:4, 1080×1440 (4:5 for cross-posting) | 5–10 slides (20 max) |
 
@@ -455,7 +455,8 @@ Edit-plan fields Claude Code may change by hand:
 - `accents`;
 - `graphics` (`file`, `at`, `face_card`, `sfx`);
 - `lut` (an optional `.cube` colour grade, relative to the project);
-- `canvas`.
+- `canvas`;
+- `frame` (the LinkedIn card for vertical footage, §4.9).
 
 ---
 
