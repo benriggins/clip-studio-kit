@@ -57,6 +57,10 @@ def brand_css(W, H, split=False, tone='light'):
         box = (f'left: {pad}px; right: {pad}px; top: {int(H * 0.11) if vertical else 100}px; '
                f'bottom: {int(H * 0.335) if vertical else 200}px;')
     fill = c.get('fill', c['accent'])
+    rgba = lambda h, a: 'rgba({}, {}, {}, {})'.format(*(int(h.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)), a)  # noqa: E731
+    dark_bg, dark_glow = c.get('dark_bg', c['background']), c.get('dark_glow', c.get('royal', c['surface']))
+    if sum(int(dark_bg.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)) > 3 * 110:   # a light brand: keep a dark stage
+        dark_bg, dark_glow = c.get('dark_bg', '#15110D'), c.get('dark_glow', '#3A3027')
     grain = ("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'>"
              "<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/>"
              "</filter><rect width='100%' height='100%' filter='url(%23n)' opacity='.55'/></svg>")
@@ -72,18 +76,18 @@ def brand_css(W, H, split=False, tone='light'):
 }}
 .tone-dark {{
   --text: #FFFFFF; --muted: rgba(255, 255, 255, .74); --accent: {c.get('accent_on_dark', fill)};
-  --card: rgba(255, 255, 255, .10); --card-solid: #2A241E; --card-line: rgba(255, 255, 255, .20);
+  --card: rgba(255, 255, 255, .10); --card-solid: {c['surface']}; --card-line: rgba(255, 255, 255, .20);
   --card-shadow: 0 24px 60px rgba(0, 0, 0, .35); --rail: rgba(255, 255, 255, .22);
 }}
 * {{ box-sizing: border-box; margin: 0; }}
 .b-root {{ position: relative; overflow: hidden; color: var(--text); font-family: var(--font-body);
   background: radial-gradient(90% 55% at 50% 30%, color-mix(in srgb, var(--fill) 22%, transparent), transparent 65%), var(--bg); }}
-.b-root.tone-dark {{ background: radial-gradient(90% 60% at 50% 35%, #3A3027, #15110D 75%); }}
+.b-root.tone-dark {{ background: radial-gradient(90% 62% at 62% 40%, {dark_glow}, {dark_bg} 78%); }}
 .fill {{ position: absolute; inset: 0; pointer-events: none; }}
 .bd-photo-wrap {{ overflow: hidden; }}
 .bd-photo {{ width: 100%; height: 100%; object-fit: cover; transform-origin: 50% 60%; }}
-.tone-dark .bd-shade {{ background: linear-gradient(180deg, rgba(20, 15, 10, .46) 0%, rgba(20, 15, 10, .58) 45%, rgba(20, 15, 10, .80) 100%),
-  radial-gradient(80% 50% at 50% 40%, rgba(214, 178, 138, .10), transparent 70%); }}
+.tone-dark .bd-shade {{ background: linear-gradient(180deg, {rgba(dark_bg, .30)} 0%, {rgba(dark_bg, .42)} 45%, {rgba(dark_bg, .72)} 100%),
+  radial-gradient(80% 50% at 50% 40%, {rgba(c['accent'], .08)}, transparent 70%); }}
 .tone-light .bd-photo-wrap {{ top: auto; height: {38 if vertical else 34}%;
   -webkit-mask-image: linear-gradient(transparent, #000 42%); mask-image: linear-gradient(transparent, #000 42%); }}
 .tone-light .bd-shade {{ background: linear-gradient(180deg, transparent {66 if vertical else 70}%, rgba(20, 15, 10, .42) 100%); }}

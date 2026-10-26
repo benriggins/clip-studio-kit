@@ -15,7 +15,8 @@ Plan graphics entries: {"file": "graphics/<name>/renders/<name>.mp4", "at": 2.3,
   face_card: the live footage (same moment, never paused) in a rounded card on top of the graphic. "src": "auto"
   (default) centres it on the speaker's face; or give [x, y] = top-left of the crop in the finished frame.
 
-Plan "frame" (LinkedIn 16:9 from vertical footage): {"x": 120, "y": 60, "h": 960, "r": 28, "bg": "#1C0838" | "bg.png",
+Plan "frame" (LinkedIn 16:9 from vertical footage): {"x": 120, "y": 60, "h": 960, "r": 28, "bg": "#1C0838" | "bg.png"
+  (default: the first graphic's empty opening frame, else a lit brand stage),
   "border": "#D4B470", "bw": 3}. The WHOLE source frame (no zoom, no face crop) plays in a rounded card at x/y, on the
   bg colour or image; graphics are drawn underneath it, so design them with that area left empty. "use_crop": true
   keeps each segment's crop inside the card. face_card is ignored in this layout.
@@ -63,6 +64,28 @@ def master(pic, out):
     return lufs, tp
 
 
+def stage(out, W, H, bg, cx, cy):
+    """A lit stage for the LinkedIn frame layout: the brand background, a soft glow of the surface colour behind the
+    teaching area, a gentle pool of light behind the footage card, a vignette and fine film grain."""
+    import numpy as np
+    from PIL import Image
+    try:
+        from _common import brand
+        c = brand()['colors']
+    except SystemExit:
+        c = {}
+    rgb = lambda h: np.array([int(h.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)], float)  # noqa: E731
+    base, glow = rgb(bg or c.get('background', '#101014')), rgb(c.get('royal', c.get('surface', '#2a2a40')))
+    warm = rgb(c.get('accent', '#C8A86A'))
+    y, x = np.mgrid[0:H, 0:W].astype(float)
+    g1 = np.exp(-(((x - W * .66) / (W * .42)) ** 2 + ((y - H * .42) / (H * .62)) ** 2))   # the teaching area glows
+    g2 = np.exp(-(((x - cx) / (W * .2)) ** 2 + ((y - cy) / (H * .55)) ** 2))              # light behind the card
+    img = base + (glow - base) * (.55 * g1)[..., None] + (warm - base) * (.07 * g2)[..., None]
+    vig = 1 - .38 * np.clip(((x - W / 2) / (W * .62)) ** 2 + ((y - H / 2) / (H * .7)) ** 2, 0, 1)
+    img = img * vig[..., None] + np.random.default_rng(7).normal(0, 3.2, (H, W, 1))
+    Image.fromarray(np.clip(img, 0, 255).astype('uint8')).save(out)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('plan')
@@ -108,22 +131,27 @@ def main():
     gfx = d.get('graphics', [])
     nin = n
     base = 'vc'
+    td_obj = tempfile.TemporaryDirectory()
+    td = Path(td_obj.name)
     cards = [] if fr else [k for k, g in enumerate(gfx) if g.get('face_card')]
-    if fr:   # the stage: brand colour or a background image; graphics go on it, the footage card goes on top
-        bg = fr.get('bg', '#000000')
-        if not str(bg).startswith('#'):
-            ins += ['-loop', '1', '-t', f'{total:.3f}', '-framerate', str(fps), '-i', str(project / bg)]
-            fc.append(f'[{n}:v]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},setsar=1,fps={fps}[stage]')
+    if fr:   # the stage: a lit brand backdrop (or an image); graphics go on it, the footage card goes on top
+        bg = fr.get('bg')
+        g0 = next((project / g['file'] for g in gfx if (project / g['file']).exists()), None)
+        if bg and not str(bg).startswith('#'):
+            stage_img = project / bg
+        elif not bg and g0:   # the first teaching slide's own empty backdrop, so slides blend into the stage
+            stage_img = td / 'stage.png'
+            run([ffmpeg(), '-y', '-v', 'error', '-i', str(g0), '-frames:v', '1', str(stage_img)])
         else:
-            ins += ['-f', 'lavfi', '-t', f'{total:.3f}', '-i', f'color=c={bg}:s={W}x{H}:r={fps}']
-            fc.append(f'[{n}:v]setsar=1[stage]')
+            stage_img = td / 'stage.png'
+            stage(stage_img, W, H, bg, fx + cw / 2, fy + ch / 2)
+        ins += ['-loop', '1', '-t', f'{total:.3f}', '-framerate', str(fps), '-i', str(stage_img)]
+        fc.append(f'[{n}:v]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},setsar=1,fps={fps},format=gbrp[stage]')
         nin += 1
         base = 'stage'
     if cards:
         fc.append(f'[vc]split={len(cards) + 1}[vbase]' + ''.join(f'[vs{k}]' for k in cards))
         base = 'vbase'
-    td_obj = tempfile.TemporaryDirectory()
-    td = Path(td_obj.name)
     sfx_inputs = []
     for k, g in enumerate(gfx):
         gpath = project / g['file'] if not Path(g['file']).is_absolute() else Path(g['file'])
@@ -193,17 +221,22 @@ def main():
         ins += ['-loop', '1', '-t', f'{total:.3f}', '-framerate', str(fps), '-i', str(mask)]
         mi = nin
         nin += 1
+        from PIL import ImageFilter
+        pad = 90     # a soft, deep shadow lifts the card off the stage; a hairline accent edge finishes it
+        e = Image.new('RGBA', (cw + 2 * pad, ch + 2 * pad), (0, 0, 0, 0))
+        ImageDraw.Draw(e).rounded_rectangle([pad, pad + 26, pad + cw, pad + ch + 26], radius=r, fill=(0, 0, 0, 170))
+        e = e.filter(ImageFilter.GaussianBlur(34))
         if bw and fr.get('border', '#D4B470'):
-            edge = td / 'frame-edge.png'
             col = fr.get('border', '#D4B470').lstrip('#')
-            e = Image.new('RGBA', (cw + 2 * bw, ch + 2 * bw), (0, 0, 0, 0))
-            ImageDraw.Draw(e).rounded_rectangle([0, 0, cw + 2 * bw - 1, ch + 2 * bw - 1], radius=r + bw,
-                                                fill=tuple(int(col[j:j + 2], 16) for j in (0, 2, 4)) + (255,))
-            e.save(edge)
-            ins += ['-loop', '1', '-t', f'{total:.3f}', '-framerate', str(fps), '-i', str(edge)]
-            fc.append(f'[{base}][{nin}:v]overlay={fx - bw}:{fy - bw}:format=gbrp[edged]')
-            base = 'edged'
-            nin += 1
+            rgb = tuple(int(col[j:j + 2], 16) for j in (0, 2, 4))
+            ImageDraw.Draw(e).rounded_rectangle([pad - bw, pad - bw, pad + cw + bw - 1, pad + ch + bw - 1],
+                                                radius=r + bw, fill=rgb + (int(255 * fr.get('edge_alpha', .85)),))
+        edge = td / 'frame-edge.png'
+        e.save(edge)
+        ins += ['-loop', '1', '-t', f'{total:.3f}', '-framerate', str(fps), '-i', str(edge)]
+        fc.append(f'[{base}][{nin}:v]overlay={fx - pad}:{fy - pad}:format=gbrp[edged]')
+        base = 'edged'
+        nin += 1
         fc.append(f'[vc]format=gbrap[vcard];[{mi}:v]format=gray[vmask];[vcard][vmask]alphamerge[vfr];'
                   f'[{base}][vfr]overlay={fx}:{fy}:format=gbrp[framed]')
         base = 'framed'
