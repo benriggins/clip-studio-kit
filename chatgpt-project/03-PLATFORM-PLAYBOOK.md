@@ -6,7 +6,7 @@ Use the same core footage, but package it differently for each network.
 |---|---:|---|---|
 | **YouTube Shorts** | 30–60 s | "Do I swipe?" + retention + payoff | *I cannot swipe yet.* |
 | **Instagram Reels** | 30–60 s (up to ~90 s when earned) | stop rate + watch time + **sends** | *Who would someone DM this to?* |
-| **LinkedIn** | 75–105 s (centre ~90 s) | professional relevance + credibility + depth | *This changed how I think about my work.* |
+| **LinkedIn** | a little over 60 s (62–75 s) | professional relevance + credibility + depth | *This changed how I think about my work.* |
 | **YouTube long-form** | whatever delivers the promise | click → 30-second hold → satisfaction | see `04-YOUTUBE-LONG-FORM-PLAYBOOK.md` |
 
 These lengths are **defaults, not caps**. The idea decides the runtime: if it resolves at 73 s, publish 73.

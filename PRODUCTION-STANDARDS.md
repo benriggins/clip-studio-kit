@@ -6,6 +6,12 @@ came from real feedback on real videos, so treat them as defaults for every new 
 say on how each rule is applied.
 
 ## 1. Footage and images
+- **Design first, generate when it earns it (2026-10-26).** Use as much code-built design, motion and animation as
+  possible: it is free and on brand. Generated images and video are welcome, but only where they add something
+  design can't (a real-world scene, emotion, a metaphor). Never generate just to fill space; reuse the media library
+  before paying for a new one.
+- **Vertical footage in a landscape video is never zoomed in to the face.** Put the whole vertical frame in a card
+  (`render.py` plan `frame`) and fill the rest of the 16:9 screen with teaching slides and motion.
 - **Never reuse footage the viewer has already seen.** Use each clip once. With few clips, hold each one longer.
   For a fast back-and-forth montage, ask the user for 10 or more clips rather than looping the same ones. If an
   ending wants to "come back" to an earlier shot, use a still photo of the same place under the end card, not the

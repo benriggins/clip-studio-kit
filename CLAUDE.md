@@ -325,6 +325,22 @@ also be a carousel. **Claude Code has the final say on every slide.**
    "link in bio". Brand-specific cinematic recipes (word behind the subject, film slate and so on) go in
    `my-studio/templates/`, like the video slide packs.
 
+### 4.9 LinkedIn: a cinematic teaching video and a PDF document carousel
+**Video (16:9, a little over 60 s, about 62–75 s):** a teaching video, not a talking head.
+- The speaker's footage sits in a card on one side. **Vertical footage is never zoomed into the face:** add
+  `"frame": {"x": 120, "y": 60, "h": 960, "r": 28, "bg": "<brand background>", "border": "<accent>"}` to the plan,
+  set `canvas` to 1920x1080, and `render.py` plays the WHOLE vertical frame in a gold-edged card while the rest of
+  the screen is the stage. Captions automatically sit in the open space beside the card.
+- Fill the stage with teaching slides, diagrams and motion design (`explainer.py … --canvas 1920x1080 --split`,
+  keeping the card's area empty) on almost every idea. Code-built design first; generated images or clips only where
+  they add something design can't (`PRODUCTION-STANDARDS.md` §1).
+- Every line captioned (LinkedIn autoplays muted), music under the voice, −14 LUFS.
+
+**Document carousel (PDF):** its own design, not the Instagram one (08 §3c, prompt 11b). Simple, clean and premium:
+the value is stated plainly on slide 1, there's one idea per slide, the light or paper theme, at most two photos, and
+no motion or audio. `carousel.py new <project> <slug> --format 4:5`, build, and deliver `out/carousel.pdf` with the
+LinkedIn post.
+
 ---
 
 ## 5. Explainers (animated graphics)

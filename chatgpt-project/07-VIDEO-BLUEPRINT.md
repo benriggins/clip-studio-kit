@@ -9,7 +9,7 @@ on every visual and technical choice.** Your job is the story, the words and the
 ## 1. The script (voiceover)
 - Every claim, number and name must come from the write-up. Don't invent statistics, results, prices,
   timelines or testimonials. Rephrase for the ear, but keep the facts the writer stated.
-- About **2.6 words per second**. LinkedIn: 45–90 s total (120–230 words). Reels/Shorts: 25–45 s.
+- About **2.6 words per second**. LinkedIn: a little over 60 s (62–75 s, 160–200 words). Reels/Shorts: 25–45 s.
 - Structure: **HOOK** (the first 2 seconds must stand alone; a claim, a question or a surprising truth) →
   **TENSION/STAKES** → **MECHANISM/PROOF** (the write-up's real substance) → **PAYOFF** → **CTA** (the brand
   profile's call to action, said once, naturally).

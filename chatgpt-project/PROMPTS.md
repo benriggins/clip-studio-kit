@@ -45,8 +45,11 @@ Return the CLIP_PLAN JSON for the full cut, then LONG_FORM_NOTES: 3 title + thum
 
 ## 5. LinkedIn cut
 ```
-Mode A: clips. One LinkedIn video from the attached transcript: [60 to 105] seconds, [16:9 / 9:16].
-LinkedIn rewards a professional takeaway, clear reasoning and a first line that stands alone. Lean on explainers that teach the idea (the split-screen look). Write the LinkedIn post with the link for the first comment.
+Mode A: clips. One LinkedIn video from the attached transcript: a little over 60 seconds (about 62 to 75), 16:9.
+LinkedIn rewards a professional takeaway, clear reasoning and a first line that stands alone. It is a cinematic
+teaching video: my footage sits in a card on one side (if it was filmed vertically, the whole vertical frame, never
+zoomed into my face) and teaching slides, diagrams and motion design build on the rest of the screen as I talk. Plan
+an explainer for almost every idea. Write the LinkedIn post with the link for the first comment.
 Return the CLIP_PLAN JSON.
 ```
 
@@ -90,6 +93,14 @@ Attach `transcript.txt` (or paste a write-up under the prompt).
 Mode F: carousel plan. Turn [the strongest idea in this video / the write-up below] into a [9]-slide [Instagram 4:5] carousel for [Instagram and a LinkedIn document], following 08-CAROUSEL-BLUEPRINT.md and my brand profile.
 Quote me word for word. Run the cover-hook tournament and the storyboard briefly, mark which slides need my images (with a shot list for each), and flag any claim I should check.
 Return the CAROUSEL_PLAN JSON.
+```
+
+## 11b. LinkedIn document carousel (PDF)
+```
+Mode F: carousel plan. Turn [the strongest idea in this video / the write-up below] into a [8]-slide LinkedIn
+document carousel (PDF, 4:5), following 08-CAROUSEL-BLUEPRINT.md section 3c and my brand profile: simple, clean,
+premium, value stated plainly on slide 1, one idea per slide, at most two photos. Quote me word for word and flag any
+claim I should check. Write the LinkedIn post to go with it. Return the CAROUSEL_PLAN JSON.
 ```
 
 ---

@@ -110,6 +110,19 @@ Name the framework and the look before the JSON (`"framework"`, `"aesthetic"`), 
   Reel** for the Reels tab, with music built in. Write copy that works for both: every slide readable in under
   2.5 seconds.
 
+## 3c. LinkedIn document carousel (a PDF, a different design from Instagram)
+LinkedIn carousels are uploaded as a **PDF document**, so plan them as their own post, not a copy of the Instagram one.
+- **The look: simple, clean, premium.** It earns attention through obvious value on the page, not a curiosity hook.
+  Generous white space, one idea per slide, a strong type hierarchy, the brand's light or paper theme, at most one
+  or two real photos. No motion, no video, no audio, no FYP looks (`notes`, `hottake`, `scrapbook`, `collage`).
+- **Recipes:** `cover`, `statement`, `steps`, `list`, `compare`, `stat`, `quote`, `paper`, `cta`.
+- **Format:** 4:5 (1080x1350) by default, or 1:1. Mark it `"platform": "linkedin"` in the plan.
+- **Slide 1 states the value plainly:** what the reader gets ("The 4-step quote system that took us from 60 minutes
+  to 6"), not a tease. Then one idea per slide, building the framework or the case. The last slide is one action
+  (follow, comment, or DM a keyword).
+- 6 to 12 slides. LinkedIn readers save and share frameworks, checklists and before/after cases, so make every
+  slide useful on its own.
+
 ## 4. Image shots (generated with GPT Image 2.5, or supplied by the user)
 Images can sit on the slide (`image` + `shot`) or inside `photos[]`, `layers[]` and `pano` (each with its own
 `shot`). A shot may set `aspect` (`1:1` polaroids and cut-outs, `3:4` slides, `16:9` panoramas), `transparent: true`
