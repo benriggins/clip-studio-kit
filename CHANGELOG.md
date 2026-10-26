@@ -1,5 +1,12 @@
 # What's new in Clip Studio
 
+## 2026-10-26: LinkedIn video and document carousels
+- LinkedIn videos are cinematic teaching videos, a little over 60 seconds: vertical footage plays whole in a
+  gold-edged card (never zoomed into the face), with teaching slides and motion on the rest of the 16:9 screen and
+  captions beside the card. New plan option `frame` in `render.py`.
+- LinkedIn carousels are their own clean, premium PDF (08 section 3c, prompt 11b).
+- Design first: code-built motion and slides wherever possible; generated images and clips only where they earn it.
+
 ## 2026-10-24: Instagram carousels post as stills
 - A carousel now posts as its still slides (1080x1440, checked), with the caption in a POSTING.md and no audio in the
   files, because a video slide blocks adding music in the Instagram app. Reels still ship with music built in.
