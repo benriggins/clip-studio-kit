@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from _common import FONTS, ROOT, brand, die, norm  # noqa: E402
+from _common import FONTS, ROOT, brand, die, norm, probe  # noqa: E402
 
 REVEAL_FRAMES = 16          # ~0.53 s at 30 fps, ease-out quart
 FPS = 30
@@ -143,6 +143,13 @@ def main(plan_path, out_ass=None):
     show = lambda w: w['w'].upper() if upper else w['w']  # noqa: E731
     margin = cap.get('margin', 100 if H > W else 160)
     maxw = W - 2 * margin
+    cx = W // 2
+    fr = plan.get('frame')
+    if fr:   # LinkedIn frame layout: captions sit in the open space right of the footage card, never over it
+        info = probe(plan['segments'][0]['source'])
+        ch = int(fr.get('h', H - 120))
+        left = int(fr.get('x', 120)) + int(round(ch * info['width'] / info['height'])) + 60
+        cx, maxw = (left + W) // 2, W - left - 80
     fill = ass_color(cap.get('box', b['colors'].get('fill', b['colors']['accent'])))
     ink = ass_color(cap.get('box_text', b['colors'].get('on_fill', '#1A1410')))
     shadow = '\\bord5\\3c&H000000&\\3a&H90&\\blur10\\1c&H000000&\\1a&H55&'   # soft dark halo, readable on bright footage
@@ -212,7 +219,7 @@ def main(plan_path, out_ass=None):
                     pop = '\\bord7\\3c&H000000&' + pop
                 if style == 'cinema':
                     pop = (f'\\fs{big}\\fscx93\\fscy93\\t(0,180,\\fscx100\\fscy100)\\fad(140,0)' if j == 0 else f'\\fs{big}')
-                emit(a, bb, W // 2, base, plain, body, pop)
+                emit(a, bb, cx, base, plain, body, pop)
         lines = units
     else:
         lines = lines_of(words, fits_at(size))
@@ -234,7 +241,7 @@ def main(plan_path, out_ass=None):
                     if b <= a:
                         continue
                     body = ' '.join(colour(x, on=(k == wi)) for k, x in enumerate(ln))
-                    emit(a, b, W // 2, base, plain, body, '\\fad(90,0)' if wi == 0 else '')
+                    emit(a, b, cx, base, plain, body, '\\fad(90,0)' if wi == 0 else '')
                 continue
 
             def body_at(a, b):
@@ -259,7 +266,7 @@ def main(plan_path, out_ass=None):
                 if bb > a:
                     out_fade = ('\\fad(0,140)' if si == len(steps) - 1 and (nxt_start is None or nxt_start - end > 0.2)
                                 else '')
-                    emit(a, bb, W // 2, y, plain, body_at(a, bb), out_fade, clip)
+                    emit(a, bb, cx, y, plain, body_at(a, bb), out_fade, clip)
     head = f"""[Script Info]
 ScriptType: v4.00+
 PlayResX: {W}

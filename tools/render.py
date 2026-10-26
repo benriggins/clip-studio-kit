@@ -14,6 +14,11 @@ Plan graphics entries: {"file": "graphics/<name>/renders/<name>.mp4", "at": 2.3,
   file is relative to the project folder; the graphic must be rendered at the plan's canvas size.
   face_card: the live footage (same moment, never paused) in a rounded card on top of the graphic. "src": "auto"
   (default) centres it on the speaker's face; or give [x, y] = top-left of the crop in the finished frame.
+
+Plan "frame" (LinkedIn 16:9 from vertical footage): {"x": 120, "y": 60, "h": 960, "r": 28, "bg": "#1C0838" | "bg.png",
+  "border": "#D4B470", "bw": 3}. The WHOLE source frame (no zoom, no face crop) plays in a rounded card at x/y, on the
+  bg colour or image; graphics are drawn underneath it, so design them with that area left empty. "use_crop": true
+  keeps each segment's crop inside the card. face_card is ignored in this layout.
 """
 import argparse
 import json
@@ -77,14 +82,24 @@ def main():
     if use_caps and not has_libass():
         die('this ffmpeg cannot burn captions (no libass). Run setup again; on Mac it installs ffmpeg-full.')
 
+    fr = d.get('frame')
+    if fr:
+        src_w, src_h = (fr['crop_w'], fr['crop_h']) if fr.get('use_crop') and fr.get('crop_w') else (info['width'], info['height'])
+        ch = int(fr.get('h', H - 120)) // 2 * 2
+        cw = int(round(ch * src_w / src_h)) // 2 * 2
+        fx, fy = int(fr.get('x', 120)), int(fr.get('y', (H - ch) // 2))
     ins, fc = [], []
     for i, s in enumerate(d['segments']):
         du = s['out'] - s['in']
         ins += ['-ss', f'{s["in"]:.3f}', '-t', f'{du:.3f}', '-i', s['source']]   # each segment from its own take
         c = s.get('crop') or {'x': 0, 'y': 0, 'w': info['width'], 'h': info['height']}
         lut = f"lut3d='{project / d['lut']}'," if d.get('lut') else ''
-        fc.append(f'[{i}:v]{lut}crop={c["w"]}:{c["h"]}:{c["x"]}:{c["y"]},scale={W}:{H}:flags=lanczos,'
-                  f'unsharp=5:5:0.4,setsar=1,fps={fps}[v{i}]')
+        if fr:   # the whole frame, uncropped, scaled into the card
+            cr = f'crop={c["w"]}:{c["h"]}:{c["x"]}:{c["y"]},' if fr.get('use_crop') else ''
+            fc.append(f'[{i}:v]{lut}{cr}scale={cw}:{ch}:flags=lanczos,unsharp=5:5:0.4,setsar=1,fps={fps}[v{i}]')
+        else:
+            fc.append(f'[{i}:v]{lut}crop={c["w"]}:{c["h"]}:{c["x"]}:{c["y"]},scale={W}:{H}:flags=lanczos,'
+                      f'unsharp=5:5:0.4,setsar=1,fps={fps}[v{i}]')
         fc.append(f'[{i}:a]aresample=48000,afade=t=in:d=0.012,afade=t=out:st={du - 0.015:.4f}:d=0.015[a{i}]')
     n = len(d['segments'])
     fc.append(''.join(f'[v{i}][a{i}]' for i in range(n)) + f'concat=n={n}:v=1:a=1[vc][ac]')
@@ -93,7 +108,17 @@ def main():
     gfx = d.get('graphics', [])
     nin = n
     base = 'vc'
-    cards = [k for k, g in enumerate(gfx) if g.get('face_card')]
+    cards = [] if fr else [k for k, g in enumerate(gfx) if g.get('face_card')]
+    if fr:   # the stage: brand colour or a background image; graphics go on it, the footage card goes on top
+        bg = fr.get('bg', '#000000')
+        if not str(bg).startswith('#'):
+            ins += ['-loop', '1', '-t', f'{total:.3f}', '-framerate', str(fps), '-i', str(project / bg)]
+            fc.append(f'[{n}:v]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},setsar=1,fps={fps}[stage]')
+        else:
+            ins += ['-f', 'lavfi', '-t', f'{total:.3f}', '-i', f'color=c={bg}:s={W}x{H}:r={fps}']
+            fc.append(f'[{n}:v]setsar=1[stage]')
+        nin += 1
+        base = 'stage'
     if cards:
         fc.append(f'[vc]split={len(cards) + 1}[vbase]' + ''.join(f'[vs{k}]' for k in cards))
         base = 'vbase'
@@ -113,7 +138,7 @@ def main():
         fc.append(f'[{gi}:v]scale={W}:{H},fps={fps},setpts=PTS-STARTPTS+{t0}/TB,format=gbrap,{fade}[g{k}]')
         fc.append(f'[{base}]format=gbrp[b{k}];[b{k}][g{k}]overlay=0:0:eof_action=pass:format=gbrp[o{k}]')
         base = f'o{k}'
-        fs = g.get('face_card')
+        fs = None if fr else g.get('face_card')
         if fs:
             from PIL import Image, ImageDraw
             mask = td / f'mask{k}.png'
@@ -158,6 +183,30 @@ def main():
             fc.append(f'[{si}:a]highpass=f=700,lowpass=f=5500,afade=t=in:d=0.22,afade=t=out:st=0.22:d=0.38,'
                       f'volume=-24dB,adelay={ms}|{ms},apad=whole_dur={total:.3f}[x{k}]')
             sfx_inputs.append(f'[x{k}]')
+    if fr:   # the live footage card, always on top, with a thin accent edge
+        from PIL import Image, ImageDraw
+        r, bw = int(fr.get('r', 28)), int(fr.get('bw', 3))
+        mask = td / 'frame-mask.png'
+        im = Image.new('L', (cw, ch), 0)
+        ImageDraw.Draw(im).rounded_rectangle([0, 0, cw - 1, ch - 1], radius=r, fill=255)
+        im.save(mask)
+        ins += ['-loop', '1', '-t', f'{total:.3f}', '-framerate', str(fps), '-i', str(mask)]
+        mi = nin
+        nin += 1
+        if bw and fr.get('border', '#D4B470'):
+            edge = td / 'frame-edge.png'
+            col = fr.get('border', '#D4B470').lstrip('#')
+            e = Image.new('RGBA', (cw + 2 * bw, ch + 2 * bw), (0, 0, 0, 0))
+            ImageDraw.Draw(e).rounded_rectangle([0, 0, cw + 2 * bw - 1, ch + 2 * bw - 1], radius=r + bw,
+                                                fill=tuple(int(col[j:j + 2], 16) for j in (0, 2, 4)) + (255,))
+            e.save(edge)
+            ins += ['-loop', '1', '-t', f'{total:.3f}', '-framerate', str(fps), '-i', str(edge)]
+            fc.append(f'[{base}][{nin}:v]overlay={fx - bw}:{fy - bw}:format=gbrp[edged]')
+            base = 'edged'
+            nin += 1
+        fc.append(f'[vc]format=gbrap[vcard];[{mi}:v]format=gray[vmask];[vcard][vmask]alphamerge[vfr];'
+                  f'[{base}][vfr]overlay={fx}:{fy}:format=gbrp[framed]')
+        base = 'framed'
     if sfx_inputs:
         fc.append('[ac]' + ''.join(sfx_inputs) + f'amix=inputs={len(sfx_inputs) + 1}:normalize=0:duration=first[a]')
     else:
